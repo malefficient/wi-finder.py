@@ -34,7 +34,7 @@ def RoundPresentFlags2NoExtended(r):
   #print("    A = Type:(%s) / 0x%08x)" % (type(a), a))
 
   b =(a & 0x5FFFFFFF)
-  print("    B = Type:(%s) / 0x%08x)" % (type(b), b))
+  #print("    B = Type:(%s) / 0x%08x)" % (type(b), b))
   return b
   ## c = struct.pack('>I', b) #Convert to Big-Endian u_int32_t
   ## print("    C = Type(%s), len(%d) )" % (type(c), len(c)))
@@ -98,7 +98,7 @@ def Listify_Radiotap_Headers(pkt):
   m = RoundPresentFlags2NoExtended(R0)
 
   ### Begin top-level header conversion
-  print("Raw: len:(%d) %s" % (len(raw(R0)), raw(R0)))
+  #print("Raw: len:(%d) %s" % (len(raw(R0)), raw(R0)))
   R0.present=m       #patch in our new bitmask
   R0.notdecoded=None #Otherwise this would contain a copy of the [Ant1][Ant2]..bytes
   R0.len=None        #Scapy help me
@@ -118,8 +118,8 @@ def Listify_Radiotap_Headers(pkt):
 
   ######### Start Parsing the extended headers
   for idx in range(0,num_extended_rtaps):
-    print("nbytes_consumed_so_far: %d" %(nbytes_consumed_so_far))
-    print("nbytes_remainig_to_consume: %d" % (nbytes_remaining_to_consume))
+    #print("nbytes_consumed_so_far: %d" %(nbytes_consumed_so_far))
+    #print("nbytes_remainig_to_consume: %d" % (nbytes_remaining_to_consume))
 
     # Example: The top level radiotap contains 16 notdecoded bytes
     #          The top level radiotap contains 4 extended fields
@@ -174,8 +174,8 @@ def Listify_Radiotap_Headers(pkt):
     fixed_list_ret.append(Full_R)
 
   #fixed_list_ret[-1]=fixed_list_ret[-1]/pkt.getlayer(Dot11)
-  wrpcap(filename='R1.pcap',  pkt=fixed_list_ret, linktype=DLT_IEEE802_11_RADIO )
-  print("Intermediate results wrriten to R1.pcap")
+  #wrpcap(filename='R1.pcap',  pkt=fixed_list_ret, linktype=DLT_IEEE802_11_RADIO )
+  #print("Intermediate results wrriten to R1.pcap")
 
   return fixed_list_ret
 

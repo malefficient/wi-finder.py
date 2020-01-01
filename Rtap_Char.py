@@ -56,15 +56,20 @@ class StateC:  #All dynamic state associated with instance
   prev_avg_noise = 0
   curr_noisedBms = []
   
-  #curr_noisedBms=[]
+  ### Set of _Minimum_ fields present 
+  
+  ### Clever: create a dictionary that maps the fields bit-positin in RadioTap Present -> list of stored values
+  present_bits_analyzed = [6,7] #//Sig_dBm,Noise_dBm
+  readings = {}
 
   curr_c = 0     #TODO Replace with call to len
 
   num_times_before_reprinting_network_header=6
     
 
-
-
+  def init(self):
+    print("#### StateC::ctor::Start")
+    input("Continue:")
 
 ###########
 

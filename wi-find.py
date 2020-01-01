@@ -45,10 +45,23 @@ class Mathy_Stuff_Holder:
 
 class ConfigC:  #Set-once configuration paramters (values do not change during main loop)
   BSSID=None
+  SSID=None
   input_src=None    # 'en0', file.pcap, ...
   sniff_mode=None #  Valid options: 'offline' (pcap file) or 'iface' (self-descr) 
   Ref_dBm=-40   #Pick an arbitrary (but consistent) 'standard candle'
 
+def RadiotapFieldDescrTable_C():
+  Data=[]
+
+  def field_descr(self, present_bit):
+    Data[6]= ["dBm_AntSignal", "Signal strength", None, 6]
+    Data[7]= ["dBm_AntNoise", "Noise", None, 7]
+    try: 
+      d=Data[present_bit]
+    except:
+      d=None
+
+    return d
 
 class MainAppC:
 
@@ -71,6 +84,9 @@ class MainAppC:
 
     print("    Rate: %d Channel:%d dBm_AntSignal: %d  Lock_Quality: %d" % (rtap.Rate, rtap.Channel,  rtap.dBm_AntSignal, rtap.Lock_Quality))
 
+
+
+
   def Simpl_Process_Radiotap(self, pkt):
     self.State.cnt+=1
 
@@ -82,40 +98,66 @@ class MainAppC:
     rtap=pkt[RadioTap]
     #print("    Rate: %d Channel:%d dBm_AntSignal: %d  Lock_Quality: %d" % (rtap.Rate, rtap.Channel,  rtap.dBm_AntSignal, rtap.Lock_Quality))
 
+    ##For field little_eff in self. Req'd fields:
 
     if (  not ('dBm_AntSignal'in rtap.present)):
       print("Skiiped. No signal present")
       return
 
+    if (  not ('dBm_AntNoise'in rtap.present)):
+      print("Skiiped. No _Noise_ reading present")
+      return
     #print("        Minimal threshold hit")
 
-    pkts_per_avg=200
-    if (  len(self.State.curr_sigdBms) <pkts_per_avg):
-          self.State.curr_sigdBms.append(rtap.dBm_AntSignal)
-          return
+    pkts_per_avg=5
+    if (len(self.State.curr_sigdBms) <pkts_per_avg):
+        self.State.curr_sigdBms.append(rtap.dBm_AntSignal)
+        self.State.curr_noisedBms.append(rtap.dBm_AntNoise)
+        return
 
     #Else: Time to compute average
-    self.State.prev_avg=self.State.curr_avg
-    self.State.curr_avg = sum(self.State.curr_sigdBms) / pkts_per_avg
+    self.State.num_times_before_reprinting_network_header-=1
+    
+    self.State.prev_avg_sig =self.State.curr_avg_sig
+    self.State.curr_avg_sig = sum(self.State.curr_sigdBms) / pkts_per_avg
 
-    if (self.State.curr_avg == self.State.prev_avg):
+    self.State.prev_avg_noise =self.State.curr_avg_noise
+    self.State.curr_avg_noise = sum(self.State.curr_noisedBms) / pkts_per_avg
+
+
+    if (self.State.curr_avg_sig == self.State.prev_avg_sig):
       curr_color = Fore.WHITE
-    elif (self.State.curr_avg > self.State.prev_avg):
+    elif (self.State.curr_avg_sig > self.State.prev_avg_sig):
       curr_color = Fore.GREEN
-    elif (self.State.curr_avg < self.State.prev_avg):
+    elif (self.State.curr_avg_sig < self.State.prev_avg_sig):
       curr_color = Fore.RED
 
-    delta = abs( self.State.prev_avg) - abs(self.State.curr_avg)
-    if (delta == 0):
-      print(".")
-    else:
-      print("%s(%s %+02d %s)  Signal(dBm):(%s %2d %s) " % (Fore.WHITE, curr_color, self.State.curr_avg, Fore.WHITE, Fore.WHITE, self.State.prev_avg, Fore.WHITE))
+    delta = abs( self.State.prev_avg_sig) - abs(self.State.curr_avg_sig)
+    snr =  self.State.curr_avg_sig  - self.State.curr_avg_noise #So says wireshark ?
+
+    #print("%3s  Signal(dBm):(%2d)  Noise(dBm)(%2d)" % (Fore.WHITE,  self.State.curr_avg_sig, self.State.curr_avg_noise))
+
+#    if (delta == 0):
+ #     print("=")
+ #     return
+    # else:
+    #   print("%sSNR:%d Signal(dBm):(%2d)  Noise(dBm)(%2d)" % (Fore.WHITE, snr,self.State.curr_avg_sig, self.State.curr_avg_noise))
+
+    ## Signal
+
+    print("(##### Network: (%s%3d%s), %s Noise:%3d, S/N:%3d ########" % (  curr_color, self.State.curr_avg_sig, Fore.WHITE, self.Config.SSID,self.State.curr_avg_noise, snr))
+
+    #print("(%s %+02d %s) to Signal curr(dBm):(%s %2d %s)  Prev(dBm)(%2d)" % (curr_color, delta, Fore.WHITE,  Fore.WHITE, self.State.curr_avg_sig, Fore.WHITE, self.State.prev_avg_sig))
+
+    ## Noise
+    #print("(%s %+02d %s) to Noise curr:(%s %2d %s)  Prev:(%2d)" % (curr_color, delta, Fore.WHITE,  Fore.WHITE, self.State.curr_avg_noise, Fore.WHITE, self.State.prev_avg_noise))
 
 
     ## TODO: Make this output 'Tabular' (columnar)
     #print("    %s Signal: %s %02d %s " % (Fore.WHITE,  curr_color, self.State.curr_avg, Fore.WHITE))
 
-    self.State.curr_sigdBms = [] # Clear list
+    self.State.curr_sigdBms = [] # Clear lists
+    self.State.curr_noisedBms = []
     #self.RateSelf()
 
   def Parse_Args(self):
@@ -132,6 +174,7 @@ class MainAppC:
 
     if not self.Config.BSSID:
       print("\nError: BSSID not defined\n")
+      Usage()
     if re.match('^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$', self.Config.BSSID):
       self.Config.BSSID = self.Config.BSSID.lower()
     else:
@@ -176,28 +219,52 @@ def GetFirstBeacon(pkt):
   print("####GetFirstBeacon::Start")
   ret = Listify_Radiotap_Headers(pkt)
   print("#####GetFirstBeacon::ListifyResults")
+  #ssid=str(pkt.getlayer(Dot11).info) #XXX This conveniently contains SSID (IELement 0. But this isnt a great approach)
+  #print("SSID: %s" % (ssid))
+  #input("")
+  #return ssid
   #print(ret)
   #wrpcap("out2.pcap", ret)
   #sys.exit(0)
 
 def main():
-  A = MainAppC()
-  A.Parse_Args()
-  sys.exit(1)
-  C = RadioTap_Profile_C()
-
   ## Misc platform setup: On Macos we need to explicitly enable libpcap for BPF to work correctly
   conf.use_pcap = True
-  sniff(input=self.Config.infile, count=1)
+ 
+  A = MainAppC()
+  A.Parse_Args()
+  C = RadioTap_Profile_C()
 
-  ## TODO:
-  bpfilter="type mgt and subtype beacon wlan host %s " % "88:ad:43:6c:b6:68"
+  bpfilter="type mgt and subtype beacon and wlan host %s " % ( A.Config.BSSID)
+
   print(bpfilter)
-
+  #input ("Enter")
   ### Before we can get to the main loop, we need to catch atleast 1 beacon (so we know how many measurements are present etc)
-  sniff(prn=GetFirstBeacon, offline="png.pcap", filter=bpfilter, monitor=1, store=0, count=1)
+  if A.Config.sniff_mode == "offline":
+    pkt1=sniff(prn=GetFirstBeacon, offline=A.Config.input_src, filter=bpfilter, monitor=1, store=1, count=1)
 
-  sniff(prn=A.Simpl_Process_Radiotap, offline="png.pcap", filter=bpfilter, monitor=1, store=0, count=0)
+  else:
+    pkt1=sniff(prn=GetFirstBeacon, iface=A.Config.input_src, filter=bpfilter, monitor=1, store=1, count=1)
+  
+  if (len(pkt1) < 1):
+    print("#### main(): Error. No Beacon received for BSSID: %s" % (A.Config.BSSID))
+    exit(0)
+  else:
+    #print("#### main(): Received initial beacon. Enter to continue")
+    pkt1=pkt1[0]
+    pkt1.summary()
+    A.Config.SSID=pkt1.info.decode()
+#  x = x.decode().encode('ascii',errors='ignore')
+
+ # pkt1.show()
+  #input("")
+  if A.Config.sniff_mode == "offline":
+    sniff(prn=A.Simpl_Process_Radiotap, offline=A.Config.input_src, filter=bpfilter, monitor=1, store=0, count=0)
+  else:
+     sniff(prn=A.Simpl_Process_Radiotap, iface=A.Config.input_src, filter=bpfilter, monitor=1, store=0, count=0)
+
+
+#  sniff(prn=A.Simpl_Process_Radiotap, offline="png.pcap", filter=bpfilter, monitor=1, store=0, count=0)
 
 
 
