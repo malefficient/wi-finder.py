@@ -15,7 +15,7 @@ from scapy.all import *
 from rtap_ext_util import Listify_Radiotap_Headers
 
 
-from Rtap_Char import RadioTap_Profile_C, StateC, ConfigC
+from Rtap_Char import RadioTap_Profile_C, StateC
 
 def Usage():
   print("Usage: %s -b <BSSID> -i <input>" % (sys.argv[0]))
@@ -43,7 +43,14 @@ class Mathy_Stuff_Holder:
   ### TODO: Really should make some sort of BeaconMeasurement() class that handles dBm/ SNR / .. conversion and comparison
 
 
-class Radiotap_Parser:
+class ConfigC:  #Set-once configuration paramters (values do not change during main loop)
+  BSSID=None
+  input_src=None    # 'en0', file.pcap, ...
+  sniff_mode=None #  Valid options: 'offline' (pcap file) or 'iface' (self-descr) 
+  Ref_dBm=-40   #Pick an arbitrary (but consistent) 'standard candle'
+
+
+class MainAppC:
 
   State = StateC()
   Config = ConfigC()
@@ -112,30 +119,56 @@ class Radiotap_Parser:
     #self.RateSelf()
 
   def Parse_Args(self):
+    print("#### Parse_Args: Start")
     opts = getopt.getopt(sys.argv[1:],"b:i:h")
-
+    
     for opt,optarg in opts[0]:
       if opt == "-b":
         self.Config.BSSID = optarg
       elif opt == "-i":
-        self.Config.infile = optarg
+        self.Config.input_src = optarg
       elif opt == "-h":
         Usage()
 
     if not self.Config.BSSID:
       print("\nError: BSSID not defined\n")
-      Usage()
-
     if re.match('^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$', self.Config.BSSID):
       self.Config.BSSID = self.Config.BSSID.lower()
     else:
       print("\nError: Wrong format for BSSID\n")
       Usage()
 
-    if not self.Config.infile:
-      print("\nError: input not specified\n")
+    if not (self.Config.input_src):
+      print("\nError: Input not specified")
       Usage()
 
+    # Attempt to open input as both file and iface
+    try:
+      rdpcap(filename=self.Config.input_src, count=1) 
+    except:
+      pass
+    else:
+      print("Parse_args: %s opened as file success" % (self.Config.input_src))
+      self.Config.sniff_mode="offline"
+    
+
+    if (self.Config.sniff_mode != "offline"):
+      try:
+        sniff(iface=self.Config.input_src, monitor=1, store=0, count=1)
+
+      except:
+        print("Error. %s not valid as input file or interface. Exiting." % (self.Config.input_src))
+        sys.exit(0)
+      else:
+        print("Opened input src as iface successfully.")
+        self.Config.sniff_mode="iface"
+
+    if self.Config.sniff_mode == "offline":
+      print("    ---- Offline mode enabled")
+    elif self.Config.sniff_mode == "iface":
+      print("     ------Online mode enabled")
+    else:
+      Usage()
 
 
 
@@ -148,31 +181,34 @@ def GetFirstBeacon(pkt):
   #sys.exit(0)
 
 def main():
-  A = Radiotap_Parser()
+  A = MainAppC()
   A.Parse_Args()
+  sys.exit(1)
   C = RadioTap_Profile_C()
 
-  ## Misc platform setup: On Macos we need to explicitly enable libpcap for BPF to work correctly 
+  ## Misc platform setup: On Macos we need to explicitly enable libpcap for BPF to work correctly
   conf.use_pcap = True
+  sniff(input=self.Config.infile, count=1)
+
   ## TODO:
   bpfilter="type mgt and subtype beacon wlan host %s " % "88:ad:43:6c:b6:68"
   print(bpfilter)
 
   ### Before we can get to the main loop, we need to catch atleast 1 beacon (so we know how many measurements are present etc)
-  sniff(prn=GetFirstBeacon, iface="en0", filter=bpfilter, monitor=1, store=0, count=1) 
+  sniff(prn=GetFirstBeacon, offline="png.pcap", filter=bpfilter, monitor=1, store=0, count=1)
 
-  sniff(prn=A.Simpl_Process_Radiotap, iface="en0", filter=bpfilter, monitor=1, store=0, count=0) 
+  sniff(prn=A.Simpl_Process_Radiotap, offline="png.pcap", filter=bpfilter, monitor=1, store=0, count=0)
 
 
 
 if __name__=='__main__':
   main()
-#tcpdump  -I -i en0  type mgt subtype beacon
+#tcpdump  -I -i png.pcap  type mgt subtype beacon
 ## Here we put a BPF filter so only 802.11 Data/to-DS frames are captured
-#s = conf.L2listen(iface = IN_INPUT,filter = "link[0]&0xc == 8 and link[1]&0xf == 1")
+#s = conf.L2listen(offline = IN_INPUT,filter = "link[0]&0xc == 8 and link[1]&0xf == 1")
 ## TODO Here we _should_ put a BPF filter so only 802.11 Management frames are captured
-## XXX JC: RESUME HERE ^^^. Fix BSSID, investigate pkts /w no signal, 
-# tcpdump  -I -i en0  -e  type mgt subtype beacon  -c 10 -w ~/t.cap3
+## XXX JC: RESUME HERE ^^^. Fix BSSID, investigate pkts /w no signal,
+# tcpdump  -I -i png.pcap  -e  type mgt subtype beacon  -c 10 -w ~/t.cap3
 
 
 # Target: The AWUS1900 / 88XXau.ko driver
