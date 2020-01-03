@@ -112,9 +112,6 @@ class MainAppC:
 
     print("    Rate: %d Channel:%d dBm_AntSignal: %d  Lock_Quality: %d" % (rtap.Rate, rtap.Channel,  rtap.dBm_AntSignal, rtap.Lock_Quality))
 
-
-
-
   def Simpl_Process_Radiotap(self, pkt):
     self.State.cnt+=1
 
@@ -124,18 +121,29 @@ class MainAppC:
 
     #print("--%2d): #### AntTuner::SimpleProcessRadiotap" % (self.State.cnt))
     rtap=pkt[RadioTap]
-    #print("    Rate: %d Channel:%d dBm_AntSignal: %d  Lock_Quality: %d" % (rtap.Rate, rtap.Channel,  rtap.dBm_AntSignal, rtap.Lock_Quality))
+    print("    Rate: %d Channel:%d dBm_AntSignal: %d  Lock_Quality: %d" % (rtap.Rate, rtap.Channel,  rtap.dBm_AntSignal, rtap.Lock_Quality))
 
-    ##For field little_eff in self. Req'd fields:
 
     if (  not ('dBm_AntSignal'in rtap.present)):
       print("Skiiped. No signal present")
       return
 
-    if (  not ('dBm_AntNoise'in rtap.present)):
-      print("Skiiped. No _Noise_ reading present")
-      return
-    #print("        Minimal threshold hit")
+    # if (  not ('dBm_AntNoise'in rtap.present)):
+    #   print("Skiiped. No _Noise_ reading present")
+    #   return
+    # #print("        Minimal threshold hit")
+
+    hdr_list = Listify_Radiotap_Headers(pkt)
+
+    if len(hdr_list) > 1:
+      print("    Multiple signal readings detected (%d). Enable tricky case." % (len(hdr_list)))
+
+    for h in hdr_list:
+      print("   dBm_AntSignal: %d " % (h.dBm_AntSignal))
+
+    
+    input("Next:")
+
 
     pkts_per_avg=5
     if (len(self.State.curr_sigdBms) <pkts_per_avg):
@@ -242,11 +250,95 @@ class MainAppC:
       Usage()
 
 
+class TargetCharacteristics:
+  # These values excep num_ext_antennas/related are parsed/deduced from Beacon Info Elements (not the radiotap meta header)
+  _initialized = False
+  channel = None
+  GHz5_enabled = False
+  MHz40_enabled = False
+  tx_beamform_enabled = False
+
+  num_ext_antennas = 0
+  ext_antenna_list = []
+  _inital_beacon = None
+
+  def analyze_ie(self, c):
+    id=c.ID
+    len=c.len
+
+    print("#### Anaylze_Ie: %d, %d" % (id, len))
+
+
+  ####
+  ## Targetcharachteristics::process_infoelements()
+  ## Parse 802.11 __Beacon__ Fields / InfoElements and pull out what we will consider 'static' information for the duration of execution.
+  ## (I.e., this is the detailed 'first-pass' over a beacon, and while we expect values to change over execution, the existence of these fields will not vary. If they do, then hopefully we throw an execption real quick to catch wtf is going on.)
+
+  def process_infoelemts(self, pkt):
+    ##
+    ## Really, we this whole process could be described as "ParseBeaconDetails", f
+    P=pkt.getlayer(Dot11)
+    print("#### TargetCharacteristiscs::process_infoelemts::start")
+    ## NOTE: This appears to be the 'appropriate' way to iterate Dot11Elt fields.
+    dot11elt = P.getlayer(Dot11Elt)
+    ## NOTE: Parsing algorithm is summary:
+    ## ID=00, SSID. If SSID.len=0, or SSID is curiously completely missing, assume 'hidden' BSSID. 
+    ## ID=01: RATES: Parse out maximum supported rate 
+    #   ##      https://dox.ipxe.org/ieee80211_8h_source.html
+        # 586  *
+        # 587  * The first 8 rates go in an IE of type RATES (1), and any more rates
+        # 588  * go in one of type EXT_RATES (50). Each rate is a byte with the low
+        # 589  * 7 bits equal to the rate in units of 500 kbps, and the high bit set
+        # 590  * if and only if the rate is "basic" (must be supported by all
+        # 591  * connected stations).
+    ## ID=03: DS ParamSet (Channel)
+    ## ID=23: TPC (TransmitSignal Strength report? ?) #QQQ  
+    ## ID=33:  IEEE80211_IE_POWER_CAPAB        33
+  
+    ## ID=45: HT Capabilites (802.11N D1.10). Complicated.
+    ##      \ TxBeamForming, AntennaSelection, HTCapabilites(20Mhz only, 40MHz intolerant), MCS Set, SecondarychjannelOffset
+    ##
+    ## 221/50:6f:9a: (WiFi alliance)/Type 9: WiFi alliance P2P info? 
+
+    while dot11elt:
+      print("dot11eltID: %d, info:%s" % (dot11elt.ID, dot11elt.info))
+      self.analyze_ie(dot11elt)
+      dot11elt = dot11elt.payload.getlayer(Dot11Elt)
+
+  def init(self, pkt): # Targetcharacteristics
+    self._inital_beacon = pkt
+    print("TargetCharecteristics::init")
+    R=pkt.getlayer(RadioTap)
+    r=RadioTap( raw(R)[:R.len] )
+    
+    self.process_infoelemts(pkt)
+    print("####-TODO: following line, parse (at least hte 'top' level RTap headre)")
+    ARrrs= Listify_Radiotap_Headers(pkt)
+    top_rtap = ARrrs.pop() 
+    self.num_extra_measurements = len(ARrrs)
+    print ("Num extra measurement on target:%d" % (self.num_extra_measurements))
+    print("##Channel precuror input: ")
+
+    idx=0
+    for p in ARrrs:
+      print("Ext-%d: AntSignal:(%d)" % (idx,p.dBm_AntSignal))
+      idx+=1
+
+    input("")
+
 
 def GetFirstBeacon(pkt):
   print("####GetFirstBeacon::Start")
-  ret = Listify_Radiotap_Headers(pkt)
-  print("#####GetFirstBeacon::ListifyResults")
+  #ret = Listify_Radiotap_Headers(pkt)
+  #print("#####GetFirstBeacon::ListifyResults")
+ 
+  print("----- Analyzing beacon into target characteristics")
+  T = TargetCharacteristics()
+  T.init(pkt)
+  
+  input("###^^How does that look in terms of meta info?")
+  sys.exit(0)
+  #T.init(pkt)
   #ssid=str(pkt.getlayer(Dot11).info) #XXX This conveniently contains SSID (IELement 0. But this isnt a great approach)
   #print("SSID: %s" % (ssid))
   #input("")
@@ -310,3 +402,17 @@ if __name__=='__main__':
 #         This device supports a/b/g/n/ac with 4 Antennas.
 #		  On top of this, the driver provides a radiotap antenna tag _per_ antenna
 #
+
+# # The snark is strong in this one: https://dox.ipxe.org/ieee80211_8h_source.html
+#  /** 802.11 Robust Security Network ("WPA") information element
+#   781  *
+#   782  * Showing once again a striking clarity of design, the IEEE folks put
+#   783  * dynamically-sized data in the middle of this structure. As such,
+#   784  * the below structure definition only works for IEs we create
+#   785  * ourselves, which always have one pairwise cipher and one AKM;
+#   786  * received IEs should be parsed piecemeal.
+#   787  *
+#   788  * Also inspired was IEEE's choice of 16-bit fields to count the
+#   789  * number of 4-byte elements in a structure with a maximum length of
+#   790  * 255 bytes.
+#   791  *
