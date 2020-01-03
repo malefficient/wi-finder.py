@@ -250,23 +250,103 @@ class MainAppC:
       Usage()
 
 
+def return_IE_by_tag(pkt, tagno, list_enabled=False):
+  print("#### return_IE_by_tag::Start")
+  ret_l=[]
+  P=pkt.getlayer(Dot11)
+  dot11elt = P.getlayer(Dot11Elt)
+  while dot11elt:
+    #print("dot11eltID: %d, len:%d info:%s" % (dot11elt.ID, dot11elt.len, dot11elt.info[:8]))
+    if (dot11elt.ID == tagno and list_enabled == False):
+      return dot11elt
+    if (dot11elt.ID == tagno and list_enabled == True):
+        ret_l.append(dot11elt)    
+    dot11elt = dot11elt.payload.getlayer(Dot11Elt)
+  
+  if (list_enabled and len(ret_l) == 0):
+    return None
+  if (list_enabled and len(ret_l) == 1):
+    return ret_l[0]
+  if (list_enabled and len(ret_l) > 1):
+    print("QQQQ Highlight! Are you sre you are okay returning a list of (%d) IES of type %d" % ( len(ret_l), tagno))
+    input("")
+    return ret_l
+
+
+
+class rates_descriptor_t:
+  # Very wordy class that tracks state re: rates / basic rates 
+  min_rate=None
+  min_Basic_rate=None
+  max_rate=None
+  max_Basic_rate=None
+  
+  def process(self, b):
+    if (type(b) != bytes):
+      print("Error. rates_decriptor_t expected type:bytes as argument. Passed %s" % (type(b)))
+      return
+    
+    print("#### rates_descriptor_t::process")
+    for c in b:
+      if (c & 0x80): #Rate is marked as 'Basic' (all client must support)
+        m_b = True
+        c = c & 0x7f
+      else:
+        m_b = False
+      
+      c = c / 2 #Convert value into Mbps (input is 500kbps)
+      print(" Basic:%d curr_rate Mbps %d" %(m_b, c))
+      
+      ##Base case (uninitialized)
+      if (self.min_rate == None):
+        self.min_rate = c
+      if (self.min_Basic_rate == None and m_b):  #'m_b' read as 'matches basic' 
+          self.min_Basic_rate=c
+      if (self.max_rate == None):
+        self.max_rate = c
+      if (self.max_Basic_rate == None and m_b):
+        self.max_Basic_rate = c
+
+      ## Safe to proceed. All values initialized to int's by this line
+      if (m_b and c > self.max_Basic_rate):
+        self.max_Basic_rate = c
+      if (m_b and c < self.min_Basic_rate):
+        self.min_Basic_rate = c
+      if ( c > self.max_rate):
+        self.max_rate = c
+      if ( c < self.min_rate):
+        self.min_rate = c
+      
+      
+  def __str__(self):
+    ret=""
+    ret+= "min_rate:%d min_basic_rate:%d max_rate:%d max_basic_rate:%d" % (self.min_rate, self.min_Basic_rate, self.max_rate, self.max_Basic_rate)
+    return ret
+  
+
 class TargetCharacteristics:
   # These values excep num_ext_antennas/related are parsed/deduced from Beacon Info Elements (not the radiotap meta header)
   _initialized = False
-  channel = None
-  GHz5_enabled = False
-  MHz40_enabled = False
-  tx_beamform_enabled = False
+  tags = {}
+
+  #0
+  ssid_hidden = False
+  ssid= None
+  
+  #3
+  curr_channel = None
+  
+  #1,50
+  rate_info = rates_descriptor_t()
+  #GHz5_enabled = False
+  #MHz40_enabled = False
+  #tx_beamform_enabled = False
 
   num_ext_antennas = 0
   ext_antenna_list = []
   _inital_beacon = None
 
-  def analyze_ie(self, c):
-    id=c.ID
-    len=c.len
 
-    print("#### Anaylze_Ie: %d, %d" % (id, len))
 
 
   ####
@@ -274,24 +354,87 @@ class TargetCharacteristics:
   ## Parse 802.11 __Beacon__ Fields / InfoElements and pull out what we will consider 'static' information for the duration of execution.
   ## (I.e., this is the detailed 'first-pass' over a beacon, and while we expect values to change over execution, the existence of these fields will not vary. If they do, then hopefully we throw an execption real quick to catch wtf is going on.)
 
-  def process_infoelemts(self, pkt):
-    ##
-    ## Really, we this whole process could be described as "ParseBeaconDetails", f
+  def summary(self):
+    ret = ""
+
+    ret += ("Chan:%02d" %  self.curr_channel)
+
+    if (self.ssid_hidden):
+      ret += "SSID: <HIDDEN>"
+    else:
+      ret += " SSID: %s" % (self.ssid)
+    
+    ret += "\n     Rates:%s" % (self.rate_info)
+    print(ret)
+    input("summary end")
+
+
+  def init_main(self, pkt):
     P=pkt.getlayer(Dot11)
-    print("#### TargetCharacteristiscs::process_infoelemts::start")
-    ## NOTE: This appears to be the 'appropriate' way to iterate Dot11Elt fields.
-    dot11elt = P.getlayer(Dot11Elt)
-    ## NOTE: Parsing algorithm is summary:
-    ## ID=00, SSID. If SSID.len=0, or SSID is curiously completely missing, assume 'hidden' BSSID. 
-    ## ID=01: RATES: Parse out maximum supported rate 
-    #   ##      https://dox.ipxe.org/ieee80211_8h_source.html
-        # 586  *
-        # 587  * The first 8 rates go in an IE of type RATES (1), and any more rates
-        # 588  * go in one of type EXT_RATES (50). Each rate is a byte with the low
-        # 589  * 7 bits equal to the rate in units of 500 kbps, and the high bit set
-        # 590  * if and only if the rate is "basic" (must be supported by all
-        # 591  * connected stations).
+    print("#### TargetCharacteristiscs::Interpret_Beacon_IEs::start")
+  
+    ## ID=00, SSID.             If SSID.len=0, or SSID is curiously completely missing, assume 'hidden' BSSID. 
+    tag_0_ssid=return_IE_by_tag(pkt, 0)
+    if (tag_0_ssid == None or tag_0_ssid.len == 0 or (tag_0_ssid.len == 1 and tag_0_ssid.info =="")):
+        self.hidden_ssid = True
+        self.tags[0] = None
+    else:
+      self.tags[0]=tag_0_ssid
+      self.ssid=tag_0_ssid.info.decode()
+
     ## ID=03: DS ParamSet (Channel)
+    tag_3_channel=return_IE_by_tag(pkt, 3)
+    if (tag_3_channel == None):
+      print("Error: Insufficient beacon information. Channe (3) Missing.")
+      return 
+    self.tags[3]= tag_3_channel
+    self.curr_channel = struct.pack('c', tag_3_channel.info)[0]
+
+
+
+    ## ID=(01,50): RATES, Extended Supported Rates (ESR): 
+        #      https://dox.ipxe.org/ieee80211_8h_source.html
+        #      * The first 8 rates go in an IE of type RATES (1), and any more rates
+        #      * go in one of type EXT_RATES (50). Each rate is a byte with the low
+        #      * 7 bits equal to the rate in units of 500 kbps, and the high bit set
+        #      * if and only if the rate is "basic" (must be supported by all
+        #      * connected stations).
+    ## ID=01 (Rates)
+    tag_1_rates = return_IE_by_tag(pkt, 1, list_enabled=False)
+    if (tag_1_rates == None):
+      input("QQQQ Curious. No rates (tag=1) found.. ")
+    else:
+      self.rate_info.process(tag_1_rates.info)
+    ## ID=50 (Extended-Rates)
+    ## Start at the 'high end' of rates. Notice that some APs include multiple 'Extended Rates (tagn0=50).
+    tag_50_extrates = return_IE_by_tag(pkt, 50, list_enabled=True)
+    tag50_bytestr=None
+    print("QQQQQQQQ: type_tag50_Extrates: %s" % (type(tag_50_extrates)))
+   # sys.exit(0)
+    if type(tag_50_extrates) == None:
+      input("Yikes. No tag50 returned")
+    if type(tag_50_extrates) == Dot11Elt:
+      tag50_bytestr=tag_50_extrates.info
+      print("Simnle case, 1 tag50 returned")
+    if type(tag_50_extrates) == list:
+      print("Tricky case. tag50 list returned")
+      if len(tag_50_extrates) > 1:
+        print("QQQQ: Intersting. Multiple(%d) ESR (tag 50) present" % (len(tag_50_extrates)))
+      tag50_bytestr = tag_50_extrates[-1:].info
+    else:
+      tag50_bytestr=tag_50_extrates.info
+
+    if (tag50_bytestr != None):
+      self.rate_info.process(tag50_bytestr)
+    
+
+   
+    
+    #print("## Rates: len:(%d), %s" % (tag_1_rates.len, tag_1_rates.info))
+    #input("")
+
+   
+    ## ID=11: "QBSS Load element" (sta_count, channel utilization, )
     ## ID=23: TPC (TransmitSignal Strength report? ?) #QQQ  
     ## ID=33:  IEEE80211_IE_POWER_CAPAB        33
   
@@ -300,18 +443,20 @@ class TargetCharacteristics:
     ##
     ## 221/50:6f:9a: (WiFi alliance)/Type 9: WiFi alliance P2P info? 
 
-    while dot11elt:
-      print("dot11eltID: %d, info:%s" % (dot11elt.ID, dot11elt.info))
-      self.analyze_ie(dot11elt)
-      dot11elt = dot11elt.payload.getlayer(Dot11Elt)
+
+    ## ID=72: "20/40 MHz BSS CoExistence info"
 
   def init(self, pkt): # Targetcharacteristics
     self._inital_beacon = pkt
-    print("TargetCharecteristics::init")
+    print("####TargetCharecteristics::init")
     R=pkt.getlayer(RadioTap)
     r=RadioTap( raw(R)[:R.len] )
     
-    self.process_infoelemts(pkt)
+    #### Iterate through info-elements, storing/caching relevant info
+    self.init_main(pkt) 
+    print("#### 2) OK. Beacon data parsed. Shown bewlow")
+    self.summary()
+    sys.exit(0)   
     print("####-TODO: following line, parse (at least hte 'top' level RTap headre)")
     ARrrs= Listify_Radiotap_Headers(pkt)
     top_rtap = ARrrs.pop() 
