@@ -50,6 +50,34 @@ class ConfigC:  #Set-once configuration paramters (values do not change during m
   sniff_mode=None #  Valid options: 'offline' (pcap file) or 'iface' (self-descr) 
   Ref_dBm=-40   #Pick an arbitrary (but consistent) 'standard candle'
 
+class StateC:  #All dynamic state associated with instance
+  cnt=0
+  curr_avg_sig = 0
+  prev_avg_sig = 0
+  curr_sigdBms = []
+  
+  curr_avg_noise = 0
+  prev_avg_noise = 0
+  curr_noisedBms = []
+  
+  ### Set of _Minimum_ fields present 
+  
+  ### Clever: create a dictionary that maps the fields bit-positin in RadioTap Present -> list of stored values
+  present_bits_analyzed = [6,7] #//Sig_dBm,Noise_dBm
+  readings = {}
+
+  curr_c = 0     #TODO Replace with call to len
+
+  num_times_before_reprinting_network_header=6
+    
+
+  def init(self):
+    print("#### StateC::ctor::Start")
+    input("Continue:")
+
+###########
+
+
 def RadiotapFieldDescrTable_C():
   Data=[]
 
