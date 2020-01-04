@@ -274,6 +274,8 @@ def return_IE_by_tag(pkt, tagno, list_enabled=False):
 
 
 
+
+
 class rates_descriptor_t:
   # Very wordy class that tracks state re: rates / basic rates 
   min_rate=None
@@ -281,6 +283,7 @@ class rates_descriptor_t:
   max_rate=None
   max_Basic_rate=None
   
+  rates_list=[]
   def process(self, b):
     if (type(b) != bytes):
       print("Error. rates_decriptor_t expected type:bytes as argument. Passed %s" % (type(b)))
@@ -296,6 +299,7 @@ class rates_descriptor_t:
       
       c = c / 2 #Convert value into Mbps (input is 500kbps)
       print(" Basic:%d curr_rate Mbps %d" %(m_b, c))
+      self.rates_list.append(c)
       
       ##Base case (uninitialized)
       if (self.min_rate == None):
@@ -321,8 +325,87 @@ class rates_descriptor_t:
   def __str__(self):
     ret=""
     ret+= "min_rate:%d min_basic_rate:%d max_rate:%d max_basic_rate:%d" % (self.min_rate, self.min_Basic_rate, self.max_rate, self.max_Basic_rate)
+    ret+="Rates_List: %s" % (self.rates_list)
     return ret
   
+  ###Notes of complex IE rates / modulations:
+
+
+## 1999 - 802.11b  2.4GHz, DSSS, 22MHz, 11MBps 
+## 1999 - 802.11a 5GHz, OFDM, 20MHz, 54Mbps
+## 2003 - 802.11g 2.4GHzm OFDM, 20MHz, 54Mbps
+#### Tag 1 (Rates):        Covers required rate   info from  1999-2003 inclusive 
+#### Tag 3 (DS Param set): Covers required chanel info from  1999-2003 inclusive
+
+### if (Tag1.Rates only goes to 11MBps) : 1999 802.11b   :  2.4
+### if (Tag1.Rates contains 54MBps)     : 2003 802.11g   : 
+### if (Tag3.channel > 11 (i.e. 149,etc): 2003 802.11a   : +5GHz
+
+
+## 2009 - 802.11n 2.4/5Ghz, MIMO-OFDM, 20,40mhz, 600MBps : +40MHz channels 4x4 mimo 
+## 2013 - 802.11AC 5GHz, MIMO-OFDM, 20,40,80,160MHZ,     : +80,160 MHz channsels 8x8 mimo
+
+### if (Tag61 present)                  : 2009 802.11N ()
+### if (Tag192 present)                 : 2013 802.11AC 
+
+## ?Critical IE
+class modulation_descriptor_t:
+  Dot11A_support = False
+  Dot11B_support = False
+  Dot11G_support = False
+  Dot11N_support = False
+  Dot11AC_support= False
+  MftrYear = 1999
+
+  Band5GHz_suport = False
+  Band2Ghz_support = False
+
+  
+  def process(self, pkt, rates_info, curr_channel):
+    print("#### Modulation_descriptor_t :: Start")
+    #print("### Rates info argument %s" % (rates_info))
+    #print("### Curr_channel argument: %d" % (curr_channel))
+    #sys.exit(0)
+    
+    
+    if (rates_info.max_rate > 1):
+      self.Dot11B_support=True
+    if (rates_info.max_rate > 11):
+      self.Dot11G_support = True 
+      if (curr_channel > 11):
+        self.Dot11A_support = True
+
+    if ( return_IE_by_tag(pkt, 61) != None):
+      self.Dot11N_support = True
+      self.Dot11A_support = True
+    if ( return_IE_by_tag(pkt, 191) != None):
+      self.Dot11AC_support = True
+
+      # if (Dot11AnythingSupport)
+      # self.2GHZ_enabled=true
+      # if (Dot11AlmostAnythingSupport)
+      # self.5GHz_enabled-true
+
+  def __str__(self):
+    print("####modulation descriptor_t :: toString start")
+    ret=""
+    if (self.Dot11A_support):
+      ret+="/A"
+      self.MftrYear=1999
+    if (self.Dot11B_support):
+      ret+="/B"
+      self.MftrYear=1999
+    if (self.Dot11G_support):
+      ret+="/G"
+      self.MftrYear=2003
+    if (self.Dot11N_support):
+      ret+="/N"
+      self.MftrYear=2009
+    if (self.Dot11AC_support):
+      ret+="/AC"
+      self.MftrYear=2013
+    ret += " MftrYear: %d" % (self.MftrYear)
+    return ret
 
 class TargetCharacteristics:
   # These values excep num_ext_antennas/related are parsed/deduced from Beacon Info Elements (not the radiotap meta header)
@@ -338,6 +421,8 @@ class TargetCharacteristics:
   
   #1,50
   rate_info = rates_descriptor_t()
+  #191, #61, ,,  
+  modulation_info = modulation_descriptor_t()
   #GHz5_enabled = False
   #MHz40_enabled = False
   #tx_beamform_enabled = False
@@ -365,6 +450,8 @@ class TargetCharacteristics:
       ret += " SSID: %s" % (self.ssid)
     
     ret += "\n     Rates:%s" % (self.rate_info)
+
+    ret += "\n    Modulation:%s" % (self.modulation_info)
     print(ret)
     input("summary end")
 
@@ -385,7 +472,7 @@ class TargetCharacteristics:
     ## ID=03: DS ParamSet (Channel)
     tag_3_channel=return_IE_by_tag(pkt, 3)
     if (tag_3_channel == None):
-      print("Error: Insufficient beacon information. Channe (3) Missing.")
+      print("Error: Insufficient beacon information. Channel (3) Missing.")
       return 
     self.tags[3]= tag_3_channel
     self.curr_channel = struct.pack('c', tag_3_channel.info)[0]
@@ -399,7 +486,7 @@ class TargetCharacteristics:
         #      * 7 bits equal to the rate in units of 500 kbps, and the high bit set
         #      * if and only if the rate is "basic" (must be supported by all
         #      * connected stations).
-    ## ID=01 (Rates)
+    ## ID=01,50 (Rates/Extended_Rates)
     tag_1_rates = return_IE_by_tag(pkt, 1, list_enabled=False)
     if (tag_1_rates == None):
       input("QQQQ Curious. No rates (tag=1) found.. ")
@@ -417,16 +504,19 @@ class TargetCharacteristics:
       tag50_bytestr=tag_50_extrates.info
       print("Simnle case, 1 tag50 returned")
     if type(tag_50_extrates) == list:
-      print("Tricky case. tag50 list returned")
+      tag50_bytestr = tag_50_extrates[-1:].info
       if len(tag_50_extrates) > 1:
         print("QQQQ: Intersting. Multiple(%d) ESR (tag 50) present" % (len(tag_50_extrates)))
-      tag50_bytestr = tag_50_extrates[-1:].info
-    else:
-      tag50_bytestr=tag_50_extrates.info
-
+      
+    ## ID=50
     if (tag50_bytestr != None):
       self.rate_info.process(tag50_bytestr)
     
+    ## ID=161,92, ... many for 802.11AC/N/G/
+    self.modulation_info.process(pkt, self.rate_info, self.curr_channel) # Both the current channel (IE3) and supported rates (IE1,50)  req'd input
+    #### Okay, So: Channel, SSID, Rates/ExtendedRates are done.
+    #### What should be next?
+    #### 802.11 5Ghz/2Ghz detection? What does the channel say for an 11a network?
 
    
     
@@ -457,6 +547,8 @@ class TargetCharacteristics:
     print("#### 2) OK. Beacon data parsed. Shown bewlow")
     self.summary()
     sys.exit(0)   
+
+
     print("####-TODO: following line, parse (at least hte 'top' level RTap headre)")
     ARrrs= Listify_Radiotap_Headers(pkt)
     top_rtap = ARrrs.pop() 
