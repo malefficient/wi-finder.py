@@ -15,7 +15,7 @@ from scapy.all import *
 from rtap_ext_util import Listify_Radiotap_Headers
 from ext_beacon_util import rates_descriptor_t, modulation_descriptor_t, return_IE_by_tag
 
-from Rtap_Char import RadioTap_Profile_C, StateC
+from Rtap_Char import RadioTap_Profile_C
 
 def Usage():
   print("Usage: %s -b <BSSID> -i <input>" % (sys.argv[0]))
@@ -75,7 +75,6 @@ class StateC:  #All dynamic state associated with instance
     print("#### StateC::ctor::Start")
     input("Continue:")
 
-###########
 
 
 def RadiotapFieldDescrTable_C():
@@ -311,6 +310,7 @@ class TargetCharacteristics:
 
    ## ID=1,3,50, <HT/vht>
     self.modulation_info.process_pkt(pkt)
+
     
     ## ID=11: "QBSS Load element" (sta_count, channel utilization, )
     ## ID=23: TPC (TransmitSignal Strength report? ?) #QQQ  
@@ -331,6 +331,18 @@ class TargetCharacteristics:
     self.summary()
     sys.exit(0)   
     ######################################
+
+
+
+
+
+
+
+
+
+
+
+
 
     print("####-TODO: following line, parse (at least hte 'top' level RTap headre)")
     ARrrs= Listify_Radiotap_Headers(pkt)

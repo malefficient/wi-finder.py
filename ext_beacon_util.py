@@ -151,6 +151,9 @@ class modulation_descriptor_t:
   Band5GHz_suport = False
   Band2Ghz_support = False
 
+  CWidth_40_support = False
+  CWidth_80_support = False
+
   def process_pkt(self, pkt):
     print("Modulation descriptior type::main loop:: start")
   
@@ -165,6 +168,13 @@ class modulation_descriptor_t:
     self.curr_channel = struct.pack('c', tag_3_channel.info)[0]
 
 
+    tag_61_HT = return_IE_by_tag(pkt, 61)
+    if (tag_61_HT != None):
+      print("This is where we process Dot11N Rates")
+      tag_61_HT.show2()
+      input("")
+      sys.exit(0)  
+    ##
   def do_dot11_letter_soup(self, pkt):
     print("#### Modulation_descriptor_t :: Start")
     #print("### Rates info argument %s" % (rates_info))
