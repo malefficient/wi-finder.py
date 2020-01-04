@@ -13,7 +13,7 @@ import re
 from colorama import Fore, Back, Style
 from scapy.all import *
 from rtap_ext_util import Listify_Radiotap_Headers
-
+from ext_beacon_util import rates_descriptor_t, modulation_descriptor_t, return_IE_by_tag
 
 from Rtap_Char import RadioTap_Profile_C, StateC
 
@@ -95,6 +95,59 @@ class MainAppC:
 
   State = StateC()
   Config = ConfigC()
+  def Parse_Args(self):
+      print("#### Parse_Args: Start")
+      opts = getopt.getopt(sys.argv[1:],"b:i:h")
+      
+      for opt,optarg in opts[0]:
+        if opt == "-b":
+          self.Config.BSSID = optarg
+        elif opt == "-i":
+          self.Config.input_src = optarg
+        elif opt == "-h":
+          Usage()
+
+      if not self.Config.BSSID:
+        print("\nError: BSSID not defined\n")
+        Usage()
+      if re.match('^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$', self.Config.BSSID):
+        self.Config.BSSID = self.Config.BSSID.lower()
+      else:
+        print("\nError: Wrong format for BSSID\n")
+        Usage()
+
+      if not (self.Config.input_src):
+        print("\nError: Input not specified")
+        Usage()
+
+      # Attempt to open input as both file and iface
+      try:
+        rdpcap(filename=self.Config.input_src, count=1) 
+      except:
+        pass
+      else:
+        print("Parse_args: %s opened as file success" % (self.Config.input_src))
+        self.Config.sniff_mode="offline"
+      
+
+      if (self.Config.sniff_mode != "offline"):
+        try:
+          sniff(iface=self.Config.input_src, monitor=1, store=0, count=1)
+
+        except:
+          print("Error. %s not valid as input file or interface. Exiting." % (self.Config.input_src))
+          sys.exit(0)
+        else:
+          print("Opened input src as iface successfully.")
+          self.Config.sniff_mode="iface"
+
+      if self.Config.sniff_mode == "offline":
+        print("    ---- Offline mode enabled")
+      elif self.Config.sniff_mode == "iface":
+        print("     ------Online mode enabled")
+      else:
+        Usage()
+
 
   def Careful_Process_Radiotap_(self, pkt):
     reqd_rtap_pres = ['Rate', 'Channel', 'dBm_AntSignal'] #List of minimum set of viable radiotap fields to be useful
@@ -196,216 +249,14 @@ class MainAppC:
     self.State.curr_noisedBms = []
     #self.RateSelf()
 
-  def Parse_Args(self):
-    print("#### Parse_Args: Start")
-    opts = getopt.getopt(sys.argv[1:],"b:i:h")
-    
-    for opt,optarg in opts[0]:
-      if opt == "-b":
-        self.Config.BSSID = optarg
-      elif opt == "-i":
-        self.Config.input_src = optarg
-      elif opt == "-h":
-        Usage()
-
-    if not self.Config.BSSID:
-      print("\nError: BSSID not defined\n")
-      Usage()
-    if re.match('^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$', self.Config.BSSID):
-      self.Config.BSSID = self.Config.BSSID.lower()
-    else:
-      print("\nError: Wrong format for BSSID\n")
-      Usage()
-
-    if not (self.Config.input_src):
-      print("\nError: Input not specified")
-      Usage()
-
-    # Attempt to open input as both file and iface
-    try:
-      rdpcap(filename=self.Config.input_src, count=1) 
-    except:
-      pass
-    else:
-      print("Parse_args: %s opened as file success" % (self.Config.input_src))
-      self.Config.sniff_mode="offline"
-    
-
-    if (self.Config.sniff_mode != "offline"):
-      try:
-        sniff(iface=self.Config.input_src, monitor=1, store=0, count=1)
-
-      except:
-        print("Error. %s not valid as input file or interface. Exiting." % (self.Config.input_src))
-        sys.exit(0)
-      else:
-        print("Opened input src as iface successfully.")
-        self.Config.sniff_mode="iface"
-
-    if self.Config.sniff_mode == "offline":
-      print("    ---- Offline mode enabled")
-    elif self.Config.sniff_mode == "iface":
-      print("     ------Online mode enabled")
-    else:
-      Usage()
-
-
-def return_IE_by_tag(pkt, tagno, list_enabled=False):
-  print("#### return_IE_by_tag::Start")
-  ret_l=[]
-  P=pkt.getlayer(Dot11)
-  dot11elt = P.getlayer(Dot11Elt)
-  while dot11elt:
-    #print("dot11eltID: %d, len:%d info:%s" % (dot11elt.ID, dot11elt.len, dot11elt.info[:8]))
-    if (dot11elt.ID == tagno and list_enabled == False):
-      return dot11elt
-    if (dot11elt.ID == tagno and list_enabled == True):
-        ret_l.append(dot11elt)    
-    dot11elt = dot11elt.payload.getlayer(Dot11Elt)
-  
-  if (list_enabled and len(ret_l) == 0):
-    return None
-  if (list_enabled and len(ret_l) == 1):
-    return ret_l[0]
-  if (list_enabled and len(ret_l) > 1):
-    print("QQQQ Highlight! Are you sre you are okay returning a list of (%d) IES of type %d" % ( len(ret_l), tagno))
-    input("")
-    return ret_l
 
 
 
 
 
-class rates_descriptor_t:
-  # Very wordy class that tracks state re: rates / basic rates 
-  min_rate=None
-  min_Basic_rate=None
-  max_rate=None
-  max_Basic_rate=None
-  
-  rates_list=[]
-  def process(self, b):
-    if (type(b) != bytes):
-      print("Error. rates_decriptor_t expected type:bytes as argument. Passed %s" % (type(b)))
-      return
-    
-    print("#### rates_descriptor_t::process")
-    for c in b:
-      if (c & 0x80): #Rate is marked as 'Basic' (all client must support)
-        m_b = True
-        c = c & 0x7f
-      else:
-        m_b = False
-      
-      c = c / 2 #Convert value into Mbps (input is 500kbps)
-      print(" Basic:%d curr_rate Mbps %d" %(m_b, c))
-      self.rates_list.append(c)
-      
-      ##Base case (uninitialized)
-      if (self.min_rate == None):
-        self.min_rate = c
-      if (self.min_Basic_rate == None and m_b):  #'m_b' read as 'matches basic' 
-          self.min_Basic_rate=c
-      if (self.max_rate == None):
-        self.max_rate = c
-      if (self.max_Basic_rate == None and m_b):
-        self.max_Basic_rate = c
-
-      ## Safe to proceed. All values initialized to int's by this line
-      if (m_b and c > self.max_Basic_rate):
-        self.max_Basic_rate = c
-      if (m_b and c < self.min_Basic_rate):
-        self.min_Basic_rate = c
-      if ( c > self.max_rate):
-        self.max_rate = c
-      if ( c < self.min_rate):
-        self.min_rate = c
-      
-      
-  def __str__(self):
-    ret=""
-    ret+= "min_rate:%d min_basic_rate:%d max_rate:%d max_basic_rate:%d" % (self.min_rate, self.min_Basic_rate, self.max_rate, self.max_Basic_rate)
-    ret+="Rates_List: %s" % (self.rates_list)
-    return ret
-  
-  ###Notes of complex IE rates / modulations:
 
 
-## 1999 - 802.11b  2.4GHz, DSSS, 22MHz, 11MBps 
-## 1999 - 802.11a 5GHz, OFDM, 20MHz, 54Mbps
-## 2003 - 802.11g 2.4GHzm OFDM, 20MHz, 54Mbps
-#### Tag 1 (Rates):        Covers required rate   info from  1999-2003 inclusive 
-#### Tag 3 (DS Param set): Covers required chanel info from  1999-2003 inclusive
 
-### if (Tag1.Rates only goes to 11MBps) : 1999 802.11b   :  2.4
-### if (Tag1.Rates contains 54MBps)     : 2003 802.11g   : 
-### if (Tag3.channel > 11 (i.e. 149,etc): 2003 802.11a   : +5GHz
-
-
-## 2009 - 802.11n 2.4/5Ghz, MIMO-OFDM, 20,40mhz, 600MBps : +40MHz channels 4x4 mimo 
-## 2013 - 802.11AC 5GHz, MIMO-OFDM, 20,40,80,160MHZ,     : +80,160 MHz channsels 8x8 mimo
-
-### if (Tag61 present)                  : 2009 802.11N ()
-### if (Tag192 present)                 : 2013 802.11AC 
-
-## ?Critical IE
-class modulation_descriptor_t:
-  Dot11A_support = False
-  Dot11B_support = False
-  Dot11G_support = False
-  Dot11N_support = False
-  Dot11AC_support= False
-  MftrYear = 1999
-
-  Band5GHz_suport = False
-  Band2Ghz_support = False
-
-  
-  def process(self, pkt, rates_info, curr_channel):
-    print("#### Modulation_descriptor_t :: Start")
-    #print("### Rates info argument %s" % (rates_info))
-    #print("### Curr_channel argument: %d" % (curr_channel))
-    #sys.exit(0)
-    
-    
-    if (rates_info.max_rate > 1):
-      self.Dot11B_support=True
-    if (rates_info.max_rate > 11):
-      self.Dot11G_support = True 
-      if (curr_channel > 11):
-        self.Dot11A_support = True
-
-    if ( return_IE_by_tag(pkt, 61) != None):
-      self.Dot11N_support = True
-      self.Dot11A_support = True
-    if ( return_IE_by_tag(pkt, 191) != None):
-      self.Dot11AC_support = True
-
-      # if (Dot11AnythingSupport)
-      # self.2GHZ_enabled=true
-      # if (Dot11AlmostAnythingSupport)
-      # self.5GHz_enabled-true
-
-  def __str__(self):
-    print("####modulation descriptor_t :: toString start")
-    ret=""
-    if (self.Dot11A_support):
-      ret+="/A"
-      self.MftrYear=1999
-    if (self.Dot11B_support):
-      ret+="/B"
-      self.MftrYear=1999
-    if (self.Dot11G_support):
-      ret+="/G"
-      self.MftrYear=2003
-    if (self.Dot11N_support):
-      ret+="/N"
-      self.MftrYear=2009
-    if (self.Dot11AC_support):
-      ret+="/AC"
-      self.MftrYear=2013
-    ret += " MftrYear: %d" % (self.MftrYear)
-    return ret
 
 class TargetCharacteristics:
   # These values excep num_ext_antennas/related are parsed/deduced from Beacon Info Elements (not the radiotap meta header)
@@ -416,23 +267,12 @@ class TargetCharacteristics:
   ssid_hidden = False
   ssid= None
   
-  #3
-  curr_channel = None
   
-  #1,50
-  rate_info = rates_descriptor_t()
-  #191, #61, ,,  
   modulation_info = modulation_descriptor_t()
-  #GHz5_enabled = False
-  #MHz40_enabled = False
-  #tx_beamform_enabled = False
-
+  
   num_ext_antennas = 0
   ext_antenna_list = []
   _inital_beacon = None
-
-
-
 
   ####
   ## Targetcharachteristics::process_infoelements()
@@ -442,14 +282,14 @@ class TargetCharacteristics:
   def summary(self):
     ret = ""
 
-    ret += ("Chan:%02d" %  self.curr_channel)
+    ret += ("Chan:%02d" %  self.modulation_info.curr_channel)
 
     if (self.ssid_hidden):
       ret += "SSID: <HIDDEN>"
     else:
       ret += " SSID: %s" % (self.ssid)
     
-    ret += "\n     Rates:%s" % (self.rate_info)
+    #ret += "\n     Rates:%s" % (self.rate_info)
 
     ret += "\n    Modulation:%s" % (self.modulation_info)
     print(ret)
@@ -469,71 +309,14 @@ class TargetCharacteristics:
       self.tags[0]=tag_0_ssid
       self.ssid=tag_0_ssid.info.decode()
 
-    ## ID=03: DS ParamSet (Channel)
-    tag_3_channel=return_IE_by_tag(pkt, 3)
-    if (tag_3_channel == None):
-      print("Error: Insufficient beacon information. Channel (3) Missing.")
-      return 
-    self.tags[3]= tag_3_channel
-    self.curr_channel = struct.pack('c', tag_3_channel.info)[0]
-
-
-
-    ## ID=(01,50): RATES, Extended Supported Rates (ESR): 
-        #      https://dox.ipxe.org/ieee80211_8h_source.html
-        #      * The first 8 rates go in an IE of type RATES (1), and any more rates
-        #      * go in one of type EXT_RATES (50). Each rate is a byte with the low
-        #      * 7 bits equal to the rate in units of 500 kbps, and the high bit set
-        #      * if and only if the rate is "basic" (must be supported by all
-        #      * connected stations).
-    ## ID=01,50 (Rates/Extended_Rates)
-    tag_1_rates = return_IE_by_tag(pkt, 1, list_enabled=False)
-    if (tag_1_rates == None):
-      input("QQQQ Curious. No rates (tag=1) found.. ")
-    else:
-      self.rate_info.process(tag_1_rates.info)
-    ## ID=50 (Extended-Rates)
-    ## Start at the 'high end' of rates. Notice that some APs include multiple 'Extended Rates (tagn0=50).
-    tag_50_extrates = return_IE_by_tag(pkt, 50, list_enabled=True)
-    tag50_bytestr=None
-    print("QQQQQQQQ: type_tag50_Extrates: %s" % (type(tag_50_extrates)))
-   # sys.exit(0)
-    if type(tag_50_extrates) == None:
-      input("Yikes. No tag50 returned")
-    if type(tag_50_extrates) == Dot11Elt:
-      tag50_bytestr=tag_50_extrates.info
-      print("Simnle case, 1 tag50 returned")
-    if type(tag_50_extrates) == list:
-      tag50_bytestr = tag_50_extrates[-1:].info
-      if len(tag_50_extrates) > 1:
-        print("QQQQ: Intersting. Multiple(%d) ESR (tag 50) present" % (len(tag_50_extrates)))
-      
-    ## ID=50
-    if (tag50_bytestr != None):
-      self.rate_info.process(tag50_bytestr)
+   ## ID=1,3,50, <HT/vht>
+    self.modulation_info.process_pkt(pkt)
     
-    ## ID=161,92, ... many for 802.11AC/N/G/
-    self.modulation_info.process(pkt, self.rate_info, self.curr_channel) # Both the current channel (IE3) and supported rates (IE1,50)  req'd input
-    #### Okay, So: Channel, SSID, Rates/ExtendedRates are done.
-    #### What should be next?
-    #### 802.11 5Ghz/2Ghz detection? What does the channel say for an 11a network?
-
-   
-    
-    #print("## Rates: len:(%d), %s" % (tag_1_rates.len, tag_1_rates.info))
-    #input("")
-
-   
     ## ID=11: "QBSS Load element" (sta_count, channel utilization, )
     ## ID=23: TPC (TransmitSignal Strength report? ?) #QQQ  
     ## ID=33:  IEEE80211_IE_POWER_CAPAB        33
-  
     ## ID=45: HT Capabilites (802.11N D1.10). Complicated.
     ##      \ TxBeamForming, AntennaSelection, HTCapabilites(20Mhz only, 40MHz intolerant), MCS Set, SecondarychjannelOffset
-    ##
-    ## 221/50:6f:9a: (WiFi alliance)/Type 9: WiFi alliance P2P info? 
-
-
     ## ID=72: "20/40 MHz BSS CoExistence info"
 
   def init(self, pkt): # Targetcharacteristics
@@ -547,7 +330,7 @@ class TargetCharacteristics:
     print("#### 2) OK. Beacon data parsed. Shown bewlow")
     self.summary()
     sys.exit(0)   
-
+    ######################################
 
     print("####-TODO: following line, parse (at least hte 'top' level RTap headre)")
     ARrrs= Listify_Radiotap_Headers(pkt)
