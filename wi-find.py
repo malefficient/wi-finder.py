@@ -308,7 +308,7 @@ class TargetCharacteristics:
     #sys.exit(0)
 
     tag_0_ssid = ret_l[0]
-    if (tag_0_ssid == None or tag_0_ssid.len == 0 or (tag_0_ssid.len == 1 and tag_0_ssid.info =="")):
+    if (tag_0_ssid == None or len(tag_0_ssid.info) == 0 or (tag_0_ssid.len == 0)  or ( (tag_0_ssid.len == 1 and tag_0_ssid.info =="") )  ):
         self.hidden_ssid = True
         self.tags[0] = None
     else:
