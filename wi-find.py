@@ -13,7 +13,7 @@ import re
 from colorama import Fore, Back, Style
 from scapy.all import *
 from rtap_ext_util import Listify_Radiotap_Headers
-from ext_beacon_util import rates_descriptor_t, modulation_descriptor_t, return_IE_by_tag
+from ext_beacon_util import rates_descriptor_t, modulation_descriptor_t, return_IEList_by_tag
 
 from Rtap_Char import RadioTap_Profile_C
 
@@ -300,7 +300,14 @@ class TargetCharacteristics:
     print("#### TargetCharacteristiscs::Interpret_Beacon_IEs::start")
   
     ## ID=00, SSID.             If SSID.len=0, or SSID is curiously completely missing, assume 'hidden' BSSID. 
-    tag_0_ssid=return_IE_by_tag(pkt, 0)
+    ret_l=return_IEList_by_tag(pkt, 0)
+    if len(ret_l) == 0:
+      self.hidden_ssid=True
+    print(ret_l)
+    print("type ret_l:(%s) len(%d)" % (type(ret_l), len(ret_l)))
+    #sys.exit(0)
+
+    tag_0_ssid = ret_l[0]
     if (tag_0_ssid == None or tag_0_ssid.len == 0 or (tag_0_ssid.len == 1 and tag_0_ssid.info =="")):
         self.hidden_ssid = True
         self.tags[0] = None
