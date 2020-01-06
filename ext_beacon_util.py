@@ -25,9 +25,9 @@ def return_IEList_by_tag(pkt, tagno):
     dot11elt = dot11elt.payload.getlayer(Dot11Elt)
 
 
-  if (len(ret_l) > 1):
-    print("QQQQ Highlight! Are you sre you are okay returning a list of (%d) IES of type %d" % ( len(ret_l), tagno))
-    input("")
+  #if (len(ret_l) > 1):
+  #  print("QQQQ Highlight! Are you sre you are okay returning a list of (%d) IES of type %d" % ( len(ret_l), tagno))
+  #  input("")
 
   return ret_l
 
@@ -62,13 +62,12 @@ class rates_descriptor_t:
       self.process_rate(t.info)
 
     print("    rates_descriptor_t::process() done.  Curr min/max: %s %s" % (self.minnie_rate, self.min_Basic_rate)) 
-    input("L")   
     return self.rates_list
 
   def __str__(self):
     print("    rates_descriptor_t::toString::Start")
     print("     Ssanity check min/max: %s %s" % (self.minnie_rate, self.min_Basic_rate)) 
-    input("")
+    #input("")
     ret=""
     ret+= "min_rate:%s min_basic_rate:%s max_rate:%s max_basic_rate:%s" % (self.minnie_rate, self.min_Basic_rate, self.max_rate, self.max_Basic_rate)
     ret+="Rates_List: %s" % (self.rates_list)
@@ -195,7 +194,7 @@ class modulation_descriptor_t:
       self.MftrYear=2009
       print("This is where we process Dot11N Rates")
       print("Rough 802.11n channel: %s" % (tag_61_HT.channel))
-      input("")     
+      #input("")     
         
     # Good explanation of VHT operation element here:
     #https://community.arubanetworks.com/t5/Controller-Based-WLANs/What-are-the-fields-in-a-VHT-Operation-Element-802-11ac/ta-p/185066
@@ -203,7 +202,7 @@ class modulation_descriptor_t:
     if len(ret_l) != 0:
       tag_192_VHT = ret_l[0]
       print("This is where we process 802.11AC")
-      input("")
+      #input("")
       tag_192_VHT.show2()
       # TODO: Parse/map VHT channel widths into supported channel widths
       #if (tag_192_VHT.curr_channel_width == 0):
@@ -330,7 +329,7 @@ class TargetCharacteristics:
     self.init_main(pkt) 
     print("#### 2) OK. Beacon data parsed. Shown bewlow")
     self.summary()
-    sys.exit(0)   
+    #sys.exit(0)   
 
 
     print("####-TODO: following line, parse (at least hte 'top' level RTap headre)")
@@ -345,7 +344,7 @@ class TargetCharacteristics:
       print("Ext-%d: AntSignal:(%d)" % (idx,p.dBm_AntSignal))
       idx+=1
 
-    input("")
+    #input("")
 
 
 def GetFirstBeacon(pkt):
@@ -358,7 +357,7 @@ def GetFirstBeacon(pkt):
   T.init(pkt)
   
   input("###^^How does that look in terms of meta info?")
-  sys.exit(0)
+  #sys.exit(0)
   #T.init(pkt)
   #ssid=str(pkt.getlayer(Dot11).info) #XXX This conveniently contains SSID (IELement 0. But this isnt a great approach)
   #print("SSID: %s" % (ssid))

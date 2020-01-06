@@ -73,8 +73,7 @@ class StateC:  #All dynamic state associated with instance
 
   def init(self):
     print("#### StateC::ctor::Start")
-    input("Continue:")
-
+    
 
 
 def RadiotapFieldDescrTable_C():
@@ -163,22 +162,37 @@ class MainAppC:
       print("Good: %s Marked present" %(k))
 
     print("    Rate: %d Channel:%d dBm_AntSignal: %d  Lock_Quality: %d" % (rtap.Rate, rtap.Channel,  rtap.dBm_AntSignal, rtap.Lock_Quality))
+  
+  ##  JC: Restart here!
+  ##  We need to determine what is the minimal viable amount of information to use -> the most.
+  ##  Before sorting out how to compare/average them, just dynamically generating the output format string (simpler)
+  ##
+  def validate_fields_present(self, pkt):
+    print("####figureout_input_fields")
+    print("First thing first! dynamically figure out output format string")
+    sys.exit(0)
 
   def Simpl_Process_Radiotap(self, pkt):
     self.State.cnt+=1
-
+    self.validate_fields_present(pkt)
     if (not pkt.haslayer(RadioTap)):
       print("Error. Wrong DLT (not radiotap). Exiting")
       sys.exit(0)
 
+    self.validate_fields_present(self,pkt)
+    sys.exit(0)
     #print("--%2d): #### AntTuner::SimpleProcessRadiotap" % (self.State.cnt))
     rtap=pkt[RadioTap]
-    print("    Rate: %d Channel:%d dBm_AntSignal: %d  Lock_Quality: %d" % (rtap.Rate, rtap.Channel,  rtap.dBm_AntSignal, rtap.Lock_Quality))
-
 
     if (  not ('dBm_AntSignal'in rtap.present)):
-      print("Skiiped. No signal present")
-      return
+        print("Skiiped. No signal present")
+        return
+
+    print("    Rate: %d Channel:%d dBm_AntSignal: %d  Lock_Quality: %d" % (rtap.Rate, rtap.Channel,  rtap.dBm_AntSignal, rtap.Lock_Quality))
+
+  
+
+  
 
     # if (  not ('dBm_AntNoise'in rtap.present)):
     #   print("Skiiped. No _Noise_ reading present")
@@ -187,16 +201,13 @@ class MainAppC:
 
     hdr_list = Listify_Radiotap_Headers(pkt)
 
-    if len(hdr_list) > 1:
-      print("    Multiple signal readings detected (%d). Enable tricky case." % (len(hdr_list)))
+    # if len(hdr_list) > 1:
+    #   print("    Multiple signal readings detected (%d). Enable tricky case." % (len(hdr_list)))
 
-    for h in hdr_list:
-      print("   dBm_AntSignal: %d " % (h.dBm_AntSignal))
+    # for h in hdr_list:
+    #   print("   dBm_AntSignal: %d " % (h.dBm_AntSignal))
 
     
-    input("Next:")
-
-
     pkts_per_avg=5
     if (len(self.State.curr_sigdBms) <pkts_per_avg):
         self.State.curr_sigdBms.append(rtap.dBm_AntSignal)
@@ -223,16 +234,7 @@ class MainAppC:
     delta = abs( self.State.prev_avg_sig) - abs(self.State.curr_avg_sig)
     snr =  self.State.curr_avg_sig  - self.State.curr_avg_noise #So says wireshark ?
 
-    #print("%3s  Signal(dBm):(%2d)  Noise(dBm)(%2d)" % (Fore.WHITE,  self.State.curr_avg_sig, self.State.curr_avg_noise))
-
-#    if (delta == 0):
- #     print("=")
- #     return
-    # else:
-    #   print("%sSNR:%d Signal(dBm):(%2d)  Noise(dBm)(%2d)" % (Fore.WHITE, snr,self.State.curr_avg_sig, self.State.curr_avg_noise))
-
-    ## Signal
-
+    ##
     print("(##### Network: (%s%3d%s), %s Noise:%3d, S/N:%3d ########" % (  curr_color, self.State.curr_avg_sig, Fore.WHITE, self.Config.SSID,self.State.curr_avg_noise, snr))
 
     #print("(%s %+02d %s) to Signal curr(dBm):(%s %2d %s)  Prev(dBm)(%2d)" % (curr_color, delta, Fore.WHITE,  Fore.WHITE, self.State.curr_avg_sig, Fore.WHITE, self.State.prev_avg_sig))
@@ -336,7 +338,7 @@ class TargetCharacteristics:
     self.init_main(pkt) 
     print("#### 2) OK. Beacon data parsed. Shown bewlow")
     self.summary()
-    sys.exit(0)   
+    #sys.exit(0)   
     ######################################
 
 
@@ -356,14 +358,13 @@ class TargetCharacteristics:
     top_rtap = ARrrs.pop() 
     self.num_extra_measurements = len(ARrrs)
     print ("Num extra measurement on target:%d" % (self.num_extra_measurements))
-    print("##Channel precuror input: ")
+    
+    # print("##Channel precuror input: ")
+    # idx=0
+    # for p in ARrrs:
+    #   print("Ext-%d: AntSignal:(%d)" % (idx,p.dBm_AntSignal))
+    #   idx+=1
 
-    idx=0
-    for p in ARrrs:
-      print("Ext-%d: AntSignal:(%d)" % (idx,p.dBm_AntSignal))
-      idx+=1
-
-    input("")
 
 
 def GetFirstBeacon(pkt):
@@ -376,7 +377,7 @@ def GetFirstBeacon(pkt):
   T.init(pkt)
   
   input("###^^How does that look in terms of meta info?")
-  sys.exit(0)
+  #sys.exit(0)
   #T.init(pkt)
   #ssid=str(pkt.getlayer(Dot11).info) #XXX This conveniently contains SSID (IELement 0. But this isnt a great approach)
   #print("SSID: %s" % (ssid))
