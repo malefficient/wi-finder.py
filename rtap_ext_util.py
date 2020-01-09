@@ -11,6 +11,7 @@
 import sys
 from scapy.all import *
 
+
 ####
 #
 # Inputs: Either a full RadioTap layer (case1), or a RadioTapExtendedPresenceMask (case2)
@@ -181,10 +182,71 @@ def Listify_Radiotap_Headers(pkt):
 
 output_packet_list=[]
 
+
+#### Radiotap Helper table 
+class RadiotapTable():
+  ###YYY: Cut and Paste job from scapy/dot11.py
+  _rt_present = ['TSFT', 'Flags', 'Rate', 'Channel', 'FHSS', 'dBm_AntSignal',
+               'dBm_AntNoise', 'Lock_Quality', 'TX_Attenuation',
+               'dB_TX_Attenuation', 'dBm_TX_Power', 'Antenna',
+               'dB_AntSignal', 'dB_AntNoise', 'RXFlags', 'TXFlags',
+               'b17', 'b18', 'ChannelPlus', 'MCS', 'A_MPDU',
+               'VHT', 'timestamp', 'HE', 'HE_MU', 'HE_MU_other_user',
+               'zero_length_psdu', 'L_SIG', 'b28',
+               'RadiotapNS', 'VendorNS', 'Ext']
+ 
+  ### 'Alternate' names used for brevity when updating display.
+  _rt_present_alt = ['TSFT', 'Flags', 'Rate', 'Channel', 'FHSS', 'Signal',
+               'Noise', 'Lock', 'TX_Attenuation',
+               'dB_TX_Atten', 'dBm_TX_Power', 'Ant',
+               'dB_Signal', 'dB_Noise', 'RXFlags', 'TXFlags',
+               'b17', 'b18', 'ChannelPlus', 'MCS', 'A_MPDU',
+               'VHT', 'timestamp', 'HE', 'HE_MU', 'HE_MU_other_user',
+               'zero_length_psdu', 'L_SIG', 'b28',
+               'RadiotapNS', 'VendorNS', 'Ext']
+
+  def init(self, R):
+    print("RadioTapTable::init")
+
+  def name_to_bit(self, s):
+    for i in range(0, len(self._rt_present)):
+      if (str(self._rt_present[i])==str(s)):
+        return i
+    return None
+
+  def alt_name_to_bit(self, s):
+    for i in range(0, len(self._rt_present_alt)):
+      if (str(self._rt_present_alt[i])==str(s)):
+        return i
+    return None
+
+  def bit_to_name(self, b):
+    print("RadioTapTable::bit_to_descr(%d): %s" % (b, self._rt_present[b]))
+    return self._rt_present[b]
+
+  def bit_to_name_alt(self, b):
+    print("RadioTapTable::bit_to_name_alt(%d): %s" % (b, self._rt_present_alt[b]))
+    return self._rt_present_alt[b]
+
+
 #Call back argument for scapy.sniff, stores the results in g
 def cb_function(pkt):
   global outfname
+  my_helper_table = RadiotapTable()
   ret_list=Listify_Radiotap_Headers(pkt)
+
+  for i in range(0, 8):
+    s = my_helper_table.bit_to_name_alt(i)
+    print("%d: %s" % (i, s))
+    s = my_helper_table.alt_name_to_bit(s)
+    print("%d: %s" % (i, s))
+    print("---")
+  
+  return
+  for r in ret_list:
+    my_helper_table.init(r)
+
+  return 
   wrpcap(filename=outfname, pkt=ret_list, append=True, linktype=DLT_IEEE802_11_RADIO )
   return
 
@@ -204,7 +266,7 @@ def main():
     print("%s: input.pcap output.pcap" % (sys.argv[0]))
     sys.exit(0)
   
-  sniff(prn=cb_function, offline=infname, store=0, count=0)
+  sniff(prn=cb_function, offline=infname, store=0, count=1)
   
  
 if __name__=='__main__':
