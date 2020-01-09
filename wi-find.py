@@ -345,7 +345,7 @@ class TargetCharacteristics:
     #   print("Ext-%d: AntSignal:(%d)" % (idx,p.dBm_AntSignal))
     #   idx+=1
 
-    input("")
+    
 
 
 def GetFirstBeacon(pkt):
@@ -370,7 +370,8 @@ def GetFirstBeacon(pkt):
 def main():
   ## Misc platform setup: On Macos we need to explicitly enable libpcap for BPF to work correctly
 
-  #conf.use_pcap = True #XXX This needs to be true on Macos
+  #conf.use_pcap = True #XXX This needs to be true on Macos, false on linux 
+  #YYY: TODO wrap sniff() calls in conf.use_pcap cases
 
   A = MainAppC()
   A.Parse_Args()
