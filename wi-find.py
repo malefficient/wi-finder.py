@@ -178,7 +178,27 @@ class MainAppC:
     
     ## TODO: JC: Dynamically generate format string (or use a contant width with variable prefix?)
 
-    print("    Rate: %d Channel:%d dBm_AntSignal: %d  Lock_Quality: %d" % (rtap.Rate, rtap.Channel,  rtap.dBm_AntSignal, rtap.Lock_Quality))
+    ##### ---- Begin dynamic format string creation ----- #######
+    header_list=[]
+    argslist=[]
+    ##Walk the present bitmask, generating a header list and a value list in parallel
+    if ('Lock_Quality' in rtap.present):
+      header_list.append("Lock:%3d")
+      argslist.append(str(rtap.Lock_Quality))
+    if ('dBm_AntSignal' in rtap.present):
+      header_list.append("Signal:%3d")
+      argslist.append(str(rtap.dBm_AntSignal))
+    
+    for i in range(0, len(header_list)):
+      print("%d:  " % (i))
+      sys.stdout.write(header_list[i])
+      sys.stdout.write(argslist[i])
+    sys.exit(0)
+
+
+    sys.exit(0)
+#
+#     print(fmt_str % map(str, argslist))
 
 
     if (  not ('dBm_AntSignal'in rtap.present)):
