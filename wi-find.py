@@ -13,7 +13,7 @@ import re
 from colorama import Fore, Back, Style
 from scapy.all import *
 from rtap_ext_util import Listify_Radiotap_Headers
-from ext_beacon_util import rates_descriptor_t, modulation_descriptor_t, return_IEList_by_tag
+from ext_beacon_util import rates_descriptor_t, modulation_descriptor_t, return_IE_by_tag
 
 from Rtap_Char import RadioTap_Profile_C
 
@@ -47,7 +47,7 @@ class ConfigC:  #Set-once configuration paramters (values do not change during m
   BSSID=None
   SSID=None
   input_src=None    # 'en0', file.pcap, ...
-  sniff_mode=None #  Valid options: 'offline' (pcap file) or 'iface' (self-descr) 
+  sniff_mode=None #  Valid options: 'offline' (pcap file) or 'iface' (self-descr)
   Ref_dBm=-40   #Pick an arbitrary (but consistent) 'standard candle'
 
 class StateC:  #All dynamic state associated with instance
@@ -55,13 +55,13 @@ class StateC:  #All dynamic state associated with instance
   curr_avg_sig = 0
   prev_avg_sig = 0
   curr_sigdBms = []
-  
+
   curr_avg_noise = 0
   prev_avg_noise = 0
   curr_noisedBms = []
-  
-  ### Set of _Minimum_ fields present 
-  
+
+  ### Set of _Minimum_ fields present
+
   ### Clever: create a dictionary that maps the fields bit-positin in RadioTap Present -> list of stored values
   present_bits_analyzed = [6,7] #//Sig_dBm,Noise_dBm
   readings = {}
@@ -69,11 +69,12 @@ class StateC:  #All dynamic state associated with instance
   curr_c = 0     #TODO Replace with call to len
 
   num_times_before_reprinting_network_header=6
-    
+
 
   def init(self):
     print("#### StateC::ctor::Start")
-    
+    input("Continue:")
+
 
 
 def RadiotapFieldDescrTable_C():
@@ -82,7 +83,7 @@ def RadiotapFieldDescrTable_C():
   def field_descr(self, present_bit):
     Data[6]= ["dBm_AntSignal", "Signal strength", None, 6]
     Data[7]= ["dBm_AntNoise", "Noise", None, 7]
-    try: 
+    try:
       d=Data[present_bit]
     except:
       d=None
@@ -96,7 +97,7 @@ class MainAppC:
   def Parse_Args(self):
       print("#### Parse_Args: Start")
       opts = getopt.getopt(sys.argv[1:],"b:i:h")
-      
+
       for opt,optarg in opts[0]:
         if opt == "-b":
           self.Config.BSSID = optarg
@@ -120,16 +121,17 @@ class MainAppC:
 
       # Attempt to open input as both file and iface
       try:
-        rdpcap(filename=self.Config.input_src, count=1) 
+        rdpcap(filename=self.Config.input_src, count=1)
       except:
         pass
       else:
         print("Parse_args: %s opened as file success" % (self.Config.input_src))
         self.Config.sniff_mode="offline"
-      
+
 
       if (self.Config.sniff_mode != "offline"):
         try:
+          print("asdf")
           sniff(iface=self.Config.input_src, monitor=1, store=0, count=1)
 
         except:
@@ -162,37 +164,22 @@ class MainAppC:
       print("Good: %s Marked present" %(k))
 
     print("    Rate: %d Channel:%d dBm_AntSignal: %d  Lock_Quality: %d" % (rtap.Rate, rtap.Channel,  rtap.dBm_AntSignal, rtap.Lock_Quality))
-  
-  ##  JC: Restart here!
-  ##  We need to determine what is the minimal viable amount of information to use -> the most.
-  ##  Before sorting out how to compare/average them, just dynamically generating the output format string (simpler)
-  ##
-  def validate_fields_present(self, pkt):
-    print("####figureout_input_fields")
-    print("First thing first! dynamically figure out output format string")
-    sys.exit(0)
 
   def Simpl_Process_Radiotap(self, pkt):
     self.State.cnt+=1
-    self.validate_fields_present(pkt)
+
     if (not pkt.haslayer(RadioTap)):
       print("Error. Wrong DLT (not radiotap). Exiting")
       sys.exit(0)
 
-    self.validate_fields_present(self,pkt)
-    sys.exit(0)
     #print("--%2d): #### AntTuner::SimpleProcessRadiotap" % (self.State.cnt))
     rtap=pkt[RadioTap]
-
-    if (  not ('dBm_AntSignal'in rtap.present)):
-        print("Skiiped. No signal present")
-        return
-
     print("    Rate: %d Channel:%d dBm_AntSignal: %d  Lock_Quality: %d" % (rtap.Rate, rtap.Channel,  rtap.dBm_AntSignal, rtap.Lock_Quality))
 
-  
 
-  
+    if (  not ('dBm_AntSignal'in rtap.present)):
+      print("Skiiped. No signal present")
+      return
 
     # if (  not ('dBm_AntNoise'in rtap.present)):
     #   print("Skiiped. No _Noise_ reading present")
@@ -201,13 +188,16 @@ class MainAppC:
 
     hdr_list = Listify_Radiotap_Headers(pkt)
 
-    # if len(hdr_list) > 1:
-    #   print("    Multiple signal readings detected (%d). Enable tricky case." % (len(hdr_list)))
+    if len(hdr_list) > 1:
+      print("    Multiple signal readings detected (%d). Enable tricky case." % (len(hdr_list)))
 
-    # for h in hdr_list:
-    #   print("   dBm_AntSignal: %d " % (h.dBm_AntSignal))
+    for h in hdr_list:
+      print("   dBm_AntSignal: %d " % (h.dBm_AntSignal))
 
-    
+
+    input("Next:")
+
+
     pkts_per_avg=5
     if (len(self.State.curr_sigdBms) <pkts_per_avg):
         self.State.curr_sigdBms.append(rtap.dBm_AntSignal)
@@ -216,7 +206,7 @@ class MainAppC:
 
     #Else: Time to compute average
     self.State.num_times_before_reprinting_network_header-=1
-    
+
     self.State.prev_avg_sig =self.State.curr_avg_sig
     self.State.curr_avg_sig = sum(self.State.curr_sigdBms) / pkts_per_avg
 
@@ -234,7 +224,16 @@ class MainAppC:
     delta = abs( self.State.prev_avg_sig) - abs(self.State.curr_avg_sig)
     snr =  self.State.curr_avg_sig  - self.State.curr_avg_noise #So says wireshark ?
 
-    ##
+    #print("%3s  Signal(dBm):(%2d)  Noise(dBm)(%2d)" % (Fore.WHITE,  self.State.curr_avg_sig, self.State.curr_avg_noise))
+
+#    if (delta == 0):
+ #     print("=")
+ #     return
+    # else:
+    #   print("%sSNR:%d Signal(dBm):(%2d)  Noise(dBm)(%2d)" % (Fore.WHITE, snr,self.State.curr_avg_sig, self.State.curr_avg_noise))
+
+    ## Signal
+
     print("(##### Network: (%s%3d%s), %s Noise:%3d, S/N:%3d ########" % (  curr_color, self.State.curr_avg_sig, Fore.WHITE, self.Config.SSID,self.State.curr_avg_noise, snr))
 
     #print("(%s %+02d %s) to Signal curr(dBm):(%s %2d %s)  Prev(dBm)(%2d)" % (curr_color, delta, Fore.WHITE,  Fore.WHITE, self.State.curr_avg_sig, Fore.WHITE, self.State.prev_avg_sig))
@@ -267,10 +266,10 @@ class TargetCharacteristics:
   #0
   ssid_hidden = False
   ssid= None
-  
-  
+
+
   modulation_info = modulation_descriptor_t()
-  
+
   num_ext_antennas = 0
   ext_antenna_list = []
   _inital_beacon = None
@@ -289,7 +288,7 @@ class TargetCharacteristics:
       ret += "SSID: <HIDDEN>"
     else:
       ret += " SSID: %s" % (self.ssid)
-    
+
     #ret += "\n     Rates:%s" % (self.rate_info)
 
     ret += "\n    Modulation:%s" % (self.modulation_info)
@@ -300,17 +299,10 @@ class TargetCharacteristics:
   def init_main(self, pkt):
     P=pkt.getlayer(Dot11)
     print("#### TargetCharacteristiscs::Interpret_Beacon_IEs::start")
-  
-    ## ID=00, SSID.             If SSID.len=0, or SSID is curiously completely missing, assume 'hidden' BSSID. 
-    ret_l=return_IEList_by_tag(pkt, 0)
-    if len(ret_l) == 0:
-      self.hidden_ssid=True
-    print(ret_l)
-    print("type ret_l:(%s) len(%d)" % (type(ret_l), len(ret_l)))
-    #sys.exit(0)
 
-    tag_0_ssid = ret_l[0]
-    if (tag_0_ssid == None or len(tag_0_ssid.info) == 0 or (tag_0_ssid.len == 0)  or ( (tag_0_ssid.len == 1 and tag_0_ssid.info =="") )  ):
+    ## ID=00, SSID.             If SSID.len=0, or SSID is curiously completely missing, assume 'hidden' BSSID.
+    tag_0_ssid=return_IE_by_tag(pkt, 0)
+    if (tag_0_ssid == None or tag_0_ssid.len == 0 or (tag_0_ssid.len == 1 and tag_0_ssid.info =="")):
         self.hidden_ssid = True
         self.tags[0] = None
     else:
@@ -320,9 +312,9 @@ class TargetCharacteristics:
    ## ID=1,3,50, <HT/vht>
     self.modulation_info.process_pkt(pkt)
 
-    
+
     ## ID=11: "QBSS Load element" (sta_count, channel utilization, )
-    ## ID=23: TPC (TransmitSignal Strength report? ?) #QQQ  
+    ## ID=23: TPC (TransmitSignal Strength report? ?) #QQQ
     ## ID=33:  IEEE80211_IE_POWER_CAPAB        33
     ## ID=45: HT Capabilites (802.11N D1.10). Complicated.
     ##      \ TxBeamForming, AntennaSelection, HTCapabilites(20Mhz only, 40MHz intolerant), MCS Set, SecondarychjannelOffset
@@ -333,12 +325,11 @@ class TargetCharacteristics:
     print("####TargetCharecteristics::init")
     R=pkt.getlayer(RadioTap)
     r=RadioTap( raw(R)[:R.len] )
-    
+
     #### Iterate through info-elements, storing/caching relevant info
-    self.init_main(pkt) 
+    self.init_main(pkt)
     print("#### 2) OK. Beacon data parsed. Shown bewlow")
     self.summary()
-    #sys.exit(0)   
     ######################################
 
 
@@ -355,29 +346,29 @@ class TargetCharacteristics:
 
     print("####-TODO: following line, parse (at least hte 'top' level RTap headre)")
     ARrrs= Listify_Radiotap_Headers(pkt)
-    top_rtap = ARrrs.pop() 
+    top_rtap = ARrrs.pop()
     self.num_extra_measurements = len(ARrrs)
     print ("Num extra measurement on target:%d" % (self.num_extra_measurements))
-    
-    # print("##Channel precuror input: ")
-    # idx=0
-    # for p in ARrrs:
-    #   print("Ext-%d: AntSignal:(%d)" % (idx,p.dBm_AntSignal))
-    #   idx+=1
+    print("##Channel precuror input: ")
 
+    idx=0
+    for p in ARrrs:
+      print("Ext-%d: AntSignal:(%d)" % (idx,p.dBm_AntSignal))
+      idx+=1
+
+    input("")
 
 
 def GetFirstBeacon(pkt):
   print("####GetFirstBeacon::Start")
   #ret = Listify_Radiotap_Headers(pkt)
   #print("#####GetFirstBeacon::ListifyResults")
- 
+
   print("----- Analyzing beacon into target characteristics")
   T = TargetCharacteristics()
   T.init(pkt)
-  
+
   input("###^^How does that look in terms of meta info?")
-  #sys.exit(0)
   #T.init(pkt)
   #ssid=str(pkt.getlayer(Dot11).info) #XXX This conveniently contains SSID (IELement 0. But this isnt a great approach)
   #print("SSID: %s" % (ssid))
@@ -389,23 +380,21 @@ def GetFirstBeacon(pkt):
 
 def main():
   ## Misc platform setup: On Macos we need to explicitly enable libpcap for BPF to work correctly
-  conf.use_pcap = True
- 
+
+  #conf.use_pcap = True #XXX This needs to be true on Macos
+
   A = MainAppC()
   A.Parse_Args()
   C = RadioTap_Profile_C()
 
   bpfilter="type mgt and subtype beacon and wlan host %s " % ( A.Config.BSSID)
-
-  print(bpfilter)
-  #input ("Enter")
   ### Before we can get to the main loop, we need to catch atleast 1 beacon (so we know how many measurements are present etc)
   if A.Config.sniff_mode == "offline":
     pkt1=sniff(prn=GetFirstBeacon, offline=A.Config.input_src, filter=bpfilter, monitor=1, store=1, count=1)
 
   else:
     pkt1=sniff(prn=GetFirstBeacon, iface=A.Config.input_src, filter=bpfilter, monitor=1, store=1, count=1)
-  
+
   if (len(pkt1) < 1):
     print("#### main(): Error. No Beacon received for BSSID: %s" % (A.Config.BSSID))
     exit(0)

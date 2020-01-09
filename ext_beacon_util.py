@@ -11,25 +11,27 @@ from scapy.all import *
 
 
 
-
-
-def return_IEList_by_tag(pkt, tagno):
+def return_IE_by_tag(pkt, tagno, list_enabled=False):
   print("#### return_IE_by_tag::Start")
   ret_l=[]
   P=pkt.getlayer(Dot11)
   dot11elt = P.getlayer(Dot11Elt)
   while dot11elt:
-    print("dot11eltID: %d, len:%d info:%s" % (dot11elt.ID, dot11elt.len, dot11elt.info[:8]))
-    if (dot11elt.ID == tagno):
-        ret_l.append(dot11elt)
+    #print("dot11eltID: %d, len:%d info:%s" % (dot11elt.ID, dot11elt.len, dot11elt.info[:8]))
+    if (dot11elt.ID == tagno and list_enabled == False):
+      return dot11elt
+    if (dot11elt.ID == tagno and list_enabled == True):
+        ret_l.append(dot11elt)    
     dot11elt = dot11elt.payload.getlayer(Dot11Elt)
+  
 
-
-  #if (len(ret_l) > 1):
-  #  print("QQQQ Highlight! Are you sre you are okay returning a list of (%d) IES of type %d" % ( len(ret_l), tagno))
-  #  input("")
+  if (len(ret_l) > 1):
+    print("QQQQ Highlight! Are you sre you are okay returning a list of (%d) IES of type %d" % ( len(ret_l), tagno))
+    input("")
 
   return ret_l
+
+
 
 
 
@@ -50,24 +52,24 @@ class rates_descriptor_t:
         #      * if and only if the rate is "basic" (must be supported by all
         #      * connected stations).
     ## ID=01,50 (Rates/Extended_Rates)
-    ret_l = return_IEList_by_tag(pkt, 1)
-    if len(ret_l) == 0:
+    tag_1_rates = return_IE_by_tag(pkt, 1, list_enabled=False)
+    if (tag_1_rates == None):
       input("QQQQ Curious. No rates (tag=1) found.. ")
     else:
-      tag_1_rates=ret_l[0]
       self.process_rate(tag_1_rates.info)
-    ## ID=50 (Extended-Rates). Multiple Tags both valid/seen in wild
-    tag_50_extrates = return_IEList_by_tag(pkt, 50)
+    ## ID=50 (Extended-Rates)
+    ## Start at the 'high end' of rates. Notice that some APs include multiple 'Extended Rates (tagn0=50).
+    tag_50_extrates = return_IE_by_tag(pkt, 50, list_enabled=True)
     for t in tag_50_extrates:
-      self.process_rate(t.info)
+        self.process_rate(t.info)
 
     print("    rates_descriptor_t::process() done.  Curr min/max: %s %s" % (self.minnie_rate, self.min_Basic_rate)) 
-    return self.rates_list
+    input("L")   
 
   def __str__(self):
     print("    rates_descriptor_t::toString::Start")
     print("     Ssanity check min/max: %s %s" % (self.minnie_rate, self.min_Basic_rate)) 
-    #input("")
+    input("")
     ret=""
     ret+= "min_rate:%s min_basic_rate:%s max_rate:%s max_basic_rate:%s" % (self.minnie_rate, self.min_Basic_rate, self.max_rate, self.max_Basic_rate)
     ret+="Rates_List: %s" % (self.rates_list)
@@ -137,84 +139,67 @@ class rates_descriptor_t:
 class modulation_descriptor_t:
 
   rates_info = rates_descriptor_t()
-  #/# curr_channel|width might be better off in the parent class, TargetInformation
   curr_channel = None
-  curr_channel_width = 20
-  
-  supported_channel_widths={}
+
   Dot11A_support = False
   Dot11B_support = False
   Dot11G_support = False
   Dot11N_support = False
   Dot11AC_support= False
-  MftrYear = 1997
+  MftrYear = 1999
 
-  Band5GHz_support = False
-  Band2Ghz_support = True
+  Band5GHz_suport = False
+  Band2Ghz_support = False
 
-    
-  CWidth_20_support = False
   CWidth_40_support = False
   CWidth_80_support = False
-  CWidth_160_support = False
 
   def process_pkt(self, pkt):
     print("Modulation descriptior type::main loop:: start")
   
     ## ID=(01, 50): Rates/ExtRates
     self.rates_info.process(pkt)
-    
+
     ## ID=03: DS ParamSet (Channel)
-    ret_l=return_IEList_by_tag(pkt, 3)
-    if len(ret_l) == 0:
+    tag_3_channel=return_IE_by_tag(pkt, 3)
+    if (tag_3_channel == None):
       print("Error: Insufficient beacon information. Channel (3) Missing.")
       return 
-    tag_3_channel=ret_l[0]
     self.curr_channel = struct.pack('c', tag_3_channel.info)[0]
-  
-    ## Okay, i _think_ given just the set of supported rates and current channel we should be able to deduce a/b/g support.
-    if (self.rates_info.max_rate > 1):
-      self.Dot11B_support=True
-      self.MftrYear = 1999
-    if (self.rates_info.max_rate > 11):
-      self.Dot11G_support = True 
-      self.MftrYear = 1999
-      if (self.curr_channel > 11):
-        self.Dot11A_support = True
-        self.Band5GHz_support = True
 
 
-    # ID=61 (802.11N)
-    ret_l = return_IEList_by_tag(pkt, 61)
-    if len(ret_l) != 0:
-      tag_61_HT = ret_l[0]
-      self.Dot11N_support = True
-      self.Dot11A_support = True
-      self.Band5GHz_support = True
-      self.MftrYear=2009
+    tag_61_HT = return_IE_by_tag(pkt, 61)
+    if (tag_61_HT != None):
       print("This is where we process Dot11N Rates")
-      print("Rough 802.11n channel: %s" % (tag_61_HT.channel))
-      #input("")     
-        
-    # Good explanation of VHT operation element here:
-    #https://community.arubanetworks.com/t5/Controller-Based-WLANs/What-are-the-fields-in-a-VHT-Operation-Element-802-11ac/ta-p/185066
-    ret_l = return_IEList_by_tag(pkt, 192)
-    if len(ret_l) != 0:
-      tag_192_VHT = ret_l[0]
-      print("This is where we process 802.11AC")
-      #input("")
-      tag_192_VHT.show2()
-      # TODO: Parse/map VHT channel widths into supported channel widths
-      #if (tag_192_VHT.curr_channel_width == 0):
-      #sys.exit(0)
-      self.Dot11AC_support = True
+      tag_61_HT.show2()
+      input("")
+      
+    ##
+  def do_dot11_letter_soup(self, pkt):
+    print("#### Modulation_descriptor_t :: Start")
+    #print("### Rates info argument %s" % (rates_info))
+    #print("### Curr_channel argument: %d" % (curr_channel))
+    #sys.exit(0)
+    
+    
+    if (rates_info.max_rate > 1):
+      self.Dot11B_support=True
+    if (rates_info.max_rate > 11):
+      self.Dot11G_support = True 
+      if (curr_channel > 11):
+        self.Dot11A_support = True
+
+    if ( return_IE_by_tag(pkt, 61) != None):
       self.Dot11N_support = True
       self.Dot11A_support = True
-      self.Band5GHz_support = True
-      self.MftrYear=2013
+    if ( return_IE_by_tag(pkt, 191) != None):
+      self.Dot11AC_support = True
 
-    ##
-  
+      # if (Dot11AnythingSupport)
+      # self.2GHZ_enabled=true
+      # if (Dot11AlmostAnythingSupport)
+      # self.5GHz_enabled-true
+
   def __str__(self):
     print("####modulation descriptor_t :: toString start")
     ret=""
@@ -329,7 +314,7 @@ class TargetCharacteristics:
     self.init_main(pkt) 
     print("#### 2) OK. Beacon data parsed. Shown bewlow")
     self.summary()
-    #sys.exit(0)   
+    sys.exit(0)   
 
 
     print("####-TODO: following line, parse (at least hte 'top' level RTap headre)")
@@ -344,7 +329,7 @@ class TargetCharacteristics:
       print("Ext-%d: AntSignal:(%d)" % (idx,p.dBm_AntSignal))
       idx+=1
 
-    #input("")
+    input("")
 
 
 def GetFirstBeacon(pkt):
@@ -357,7 +342,7 @@ def GetFirstBeacon(pkt):
   T.init(pkt)
   
   input("###^^How does that look in terms of meta info?")
-  #sys.exit(0)
+  sys.exit(0)
   #T.init(pkt)
   #ssid=str(pkt.getlayer(Dot11).info) #XXX This conveniently contains SSID (IELement 0. But this isnt a great approach)
   #print("SSID: %s" % (ssid))
