@@ -15,7 +15,7 @@ from scapy.all import *
 from rtap_ext_util import Listify_Radiotap_Headers
 from ext_beacon_util import rates_descriptor_t, modulation_descriptor_t, return_IE_by_tag
 
-from Rtap_Char import RadioTap_Profile_C
+from Rtap_Char import RadioTap_Profile_C, MeasureyM
 
 def Usage():
   print("Usage: %s -b <BSSID> -i <input>" % (sys.argv[0]))
@@ -51,8 +51,41 @@ class ConfigC:  #Set-once configuration paramters (values do not change during m
   sniff_mode=None #  Valid options: 'offline' (pcap file) or 'iface' (self-descr)
   Ref_dBm=-40   #Pick an arbitrary (but consistent) 'standard candle'
 
+  pkts_per_avg=5
+
+
+### JC: TODO: 
+### In the global State variable StateC, add:
+### StateC.AntennaMeasureList = []
+##### StateC.AntennaMeasureList[BitB] = list(measurements for Rtap field BitB)
+
 class StateC:  #All dynamic state associated with instance
   cnt=0
+
+  TopR = MeasureyM()
+  RecordList=[]
+  ### TODO: 
+  ### YYY: *Hmm*. What would be ideal is a simple Map of AntennaId->List(MeasureyM's)
+  ### I think we should go this way, with the following caveat:
+  ### The 'Top' Level radiotap measurement will be in AntennaMeasuryMap[0].
+  ###Extended Radiotap records will be stored at AnteannaId+1. 
+  ### //This accounts for the fact that 'Extended' Antenna rtap headers typically start
+  ### with AntennaID 0.
+  ### So:
+  ### AntennaMeasureList[0] = TopLevelRadiotapHeader
+  ### AntennaMeasureList[1] = AntennaId.0
+  ### AntennaMeasureList[2] = AntennaID.1, ..
+  ### AntennaMeasureList[3] = AntennaId.2
+  ### AntennaMeasureList[4] = AntennaId.3
+  ### AntennaMeasureList[X] = 1-Dimensional list, offset=AntennaId
+  ### AntennaMeasureList[X].MtoL[RtapBitId] = list()
+  ### AntennaMeasureList[0] = MeasureyM
+  ### AntennaMeasurey_Ma
+  ### Measurey_Map
+  ### MeasureyM.update(R)
+  ### ## M.cnt+=1
+  ### ## M.AntSignal_List = []
+  AntennaMeasureList = []
   curr_avg_sig = 0
   prev_avg_sig = 0
   curr_sigdBms = []
@@ -78,18 +111,7 @@ class StateC:  #All dynamic state associated with instance
 
 
 
-def RadiotapFieldDescrTable_C():
-  Data=[]
 
-  def field_descr(self, present_bit):
-    Data[6]= ["dBm_AntSignal", "Signal strength", None, 6]
-    Data[7]= ["dBm_AntNoise", "Noise", None, 7]
-    try:
-      d=Data[present_bit]
-    except:
-      d=None
-
-    return d
 
 class MainAppC:
 
@@ -150,6 +172,8 @@ class MainAppC:
         Usage()
 
 
+
+
   def Careful_Process_Radiotap_(self, pkt):
     reqd_rtap_pres = ['Rate', 'Channel', 'dBm_AntSignal'] #List of minimum set of viable radiotap fields to be useful
     self.State.cnt+=1
@@ -168,74 +192,46 @@ class MainAppC:
 
   def Simpl_Process_Radiotap(self, pkt):
     self.State.cnt+=1
+    header_list=[]
+    argslist=[]
+    colorlist=[]
 
     if (not pkt.haslayer(RadioTap)):
       print("Error. Wrong DLT (not radiotap). Exiting")
       sys.exit(0)
 
-    print("--%2d): #### AntTuner::SimpleProcessRadiotap" % (self.State.cnt))
-    rtap=pkt[RadioTap]
-    
-    ## TODO: JC: Dynamically generate format string (or use a contant width with variable prefix?)
+    R=pkt[RadioTap]
+    R=RadioTap(raw(R)[:R.len]) ## Trim  Radiotap down to only itself
 
-    ##### ---- Begin dynamic format string creation ----- #######
-    header_list=[]
-    argslist=[]
-    ##Walk the present bitmask, generating a header list and a value list in parallel
-    if ('Lock_Quality' in rtap.present):
-      header_list.append("Lock:%3d")
-      argslist.append(str(rtap.Lock_Quality))
-    if ('dBm_AntSignal' in rtap.present):
-      header_list.append("Signal:%3d")
-      argslist.append(str(rtap.dBm_AntSignal))
-    
-    for i in range(0, len(header_list)):
-      print("%d:  " % (i))
-      sys.stdout.write(header_list[i])
-      sys.stdout.write(argslist[i])
-    sys.exit(0)
-
-
-    sys.exit(0)
-#
-#     print(fmt_str % map(str, argslist))
-
-
-    if (  not ('dBm_AntSignal'in rtap.present)):
-      print("Skiiped. No signal present")
+    ### Update records (mathh ###
+    if (len(self.State.curr_sigdBms) < self.Config.pkts_per_avg):
+      self.State.curr_sigdBms.append(R.dBm_AntSignal)
+      #self.State.curr_noisedBms.append(R.dBm_AntNoise)
       return
+    else:
+      self.State.prev_avg_sig = self.State.curr_avg_sig
+      self.State.curr_avg_sig = sum(self.State.curr_sigdBms) / self.Config.pkts_per_avg
+      self.State.curr_sigdBms = [] # Clear lists
 
-    # if (  not ('dBm_AntNoise'in rtap.present)):
-    #   print("Skiiped. No _Noise_ reading present")
-    #   return
-    # #print("        Minimal threshold hit")
 
+    ###First thing first: Create the ascii output for the top-level radiotap header. 
+    ### Often times the topmost header has the most extensive information
     hdr_list = Listify_Radiotap_Headers(pkt)
-
     if len(hdr_list) > 1:
       print("    Multiple signal readings detected (%d). Enable tricky case." % (len(hdr_list)))
 
-    for h in hdr_list:
-      print("   dBm_AntSignal: %d " % (h.dBm_AntSignal))
+    ## TODO: JC: Dynamically generate format string (or use a contant width with variable prefix?)
+    ##### ---- Begin dynamic format string creation ----- #######
+    ##Walk the present bitmask, generating a header list and a value list in parallel
+    
+    # 
+    
+#     print(fmt_str % map(str, argslist))
 
 
-    input("Next:")
 
-
-    pkts_per_avg=5
-    if (len(self.State.curr_sigdBms) <pkts_per_avg):
-        self.State.curr_sigdBms.append(rtap.dBm_AntSignal)
-        self.State.curr_noisedBms.append(rtap.dBm_AntNoise)
-        return
-
-    #Else: Time to compute average
-    self.State.num_times_before_reprinting_network_header-=1
-
-    self.State.prev_avg_sig =self.State.curr_avg_sig
-    self.State.curr_avg_sig = sum(self.State.curr_sigdBms) / pkts_per_avg
-
-    self.State.prev_avg_noise =self.State.curr_avg_noise
-    self.State.curr_avg_noise = sum(self.State.curr_noisedBms) / pkts_per_avg
+    #self.State.prev_avg_noise =self.State.curr_avg_noise
+    #self.State.curr_avg_noise = sum(self.State.curr_noisedBms) / pkts_per_avg
 
 
     if (self.State.curr_avg_sig == self.State.prev_avg_sig):
@@ -246,31 +242,13 @@ class MainAppC:
       curr_color = Fore.RED
 
     delta = abs( self.State.prev_avg_sig) - abs(self.State.curr_avg_sig)
-    snr =  self.State.curr_avg_sig  - self.State.curr_avg_noise #So says wireshark ?
-
-    #print("%3s  Signal(dBm):(%2d)  Noise(dBm)(%2d)" % (Fore.WHITE,  self.State.curr_avg_sig, self.State.curr_avg_noise))
-
-#    if (delta == 0):
- #     print("=")
- #     return
-    # else:
-    #   print("%sSNR:%d Signal(dBm):(%2d)  Noise(dBm)(%2d)" % (Fore.WHITE, snr,self.State.curr_avg_sig, self.State.curr_avg_noise))
-
     ## Signal
 
-    print("(##### Network: (%s%3d%s), %s Noise:%3d, S/N:%3d ########" % (  curr_color, self.State.curr_avg_sig, Fore.WHITE, self.Config.SSID,self.State.curr_avg_noise, snr))
-
-    #print("(%s %+02d %s) to Signal curr(dBm):(%s %2d %s)  Prev(dBm)(%2d)" % (curr_color, delta, Fore.WHITE,  Fore.WHITE, self.State.curr_avg_sig, Fore.WHITE, self.State.prev_avg_sig))
-
-    ## Noise
-    #print("(%s %+02d %s) to Noise curr:(%s %2d %s)  Prev:(%2d)" % (curr_color, delta, Fore.WHITE,  Fore.WHITE, self.State.curr_avg_noise, Fore.WHITE, self.State.prev_avg_noise))
-
+    print("(##### Network: (%s%3d%s), %s ########" % (  curr_color, self.State.curr_avg_sig, Fore.WHITE, self.Config.SSID ))
 
     ## TODO: Make this output 'Tabular' (columnar)
     #print("    %s Signal: %s %02d %s " % (Fore.WHITE,  curr_color, self.State.curr_avg, Fore.WHITE))
 
-    self.State.curr_sigdBms = [] # Clear lists
-    self.State.curr_noisedBms = []
     #self.RateSelf()
 
 

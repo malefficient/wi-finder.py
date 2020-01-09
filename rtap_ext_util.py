@@ -56,19 +56,19 @@ def CountUsefulRadiotapEntries(pkt):  #In this context 'Useful' is defined as
 
   R = pkt[RadioTap]
 
-  if (  ('dBm_AntSignal'in R.present) or ('dBm_AntNoise' in R.present)):
-    print("        Minimal threshold hit")
-  else:
-    return 0
+  # if (  ('dBm_AntSignal'in R.present) or ('dBm_AntNoise' in R.present)):
+  #   print("        Minimal threshold hit")
+  # else:
+  #   return 0
 
   if (not 'Ext' in R.present):
-    print("    Simple case: no extended bitmap")
+    #print("    Simple case: no extended bitmap")
     num_ext_antenna_ents = 0
     return 1
 
   num_extended_rtaps= len(R.Ext)
-  print("        OK: We see %d extended radiotap entries, with (%d) bytes unaccounted for (notdecodeD)" % (num_extended_rtaps, len(R.notdecoded)))
-  print("    ####CountUsefulRadiotapEntries::End. Returning %d\n" % (num_extended_rtaps+1))
+  #print("        OK: We see %d extended radiotap entries, with (%d) bytes unaccounted for (notdecodeD)" % (num_extended_rtaps, len(R.notdecoded)))
+  #print("    ####CountUsefulRadiotapEntries::End. Returning %d\n" % (num_extended_rtaps+1))
 
   return num_extended_rtaps + 1
 
@@ -86,14 +86,14 @@ def Listify_Radiotap_Headers(pkt):
 
   R0=pkt.getlayer(RadioTap)
   R0=RadioTap(raw(R0)[:R0.len]) #Trim radiotap layer down to include only itself
-  print("####Listify_Radiotap_Headers::Start")
+  #print("####Listify_Radiotap_Headers::Start")
   fixed_list_ret = []
 
   num_useful_rtaps = CountUsefulRadiotapEntries(pkt)
   if (num_useful_rtaps == 0):
     return ()
   num_extended_rtaps = num_useful_rtaps - 1
-  print("####Listify_Radiotap_Headers:: Working with  extended %d rtap headers " % (num_extended_rtaps))
+  #print("####Listify_Radiotap_Headers:: Working with  extended %d rtap headers " % (num_extended_rtaps))
   ## Convert the 'top-level' RadioTap present bitmask first
   m = RoundPresentFlags2NoExtended(R0)
 
@@ -130,7 +130,7 @@ def Listify_Radiotap_Headers(pkt):
     #
     window_buff = window_buff_backing_buff[ nbytes_consumed_so_far: ]
 
-    print("#########Start parsing Ext R_%d #########" % (idx))
+    #print("#########Start parsing Ext R_%d #########" % (idx))
     #Convert the current 'Extended' Radiotap bitmask into /not/ extended version
     curr_bitmask=RoundPresentFlags2NoExtended(pkt.getlayer(RadioTap).Ext[idx])
 

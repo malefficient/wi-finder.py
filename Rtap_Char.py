@@ -15,6 +15,32 @@ import sys
 sys.path.append("./scapy")
 from scapy.all import *
 
+class MeasureyM:
+  L_Lock=[]
+  L_dBm_AntSignal=[]
+  L_dBm_AntNoise=[]
+
+  Measurey_Map={}
+
+  
+  curr_avg_sig = 0
+  prev_avg_sig = 0
+  curr_sigdBms = []
+
+  L_observed_chan=None
+  advertised_chan=None
+  
+  def Update(self, R):
+    if ("A" == "Blah"):
+      print("GarbldeyGook")
+    ###PseudoCode:
+    ### for bit B in R.present
+    ### self.Measurey_Map[B].append R.value_for_B     
+  def init(self, R):
+    if ('Lock_Quality' in R.present):
+      self.Lock = R.Lock_Quality
+
+
 ###########Organize me#####
 class RadiotapMeasurement1Dimensional():
   Initialized = False
