@@ -43,6 +43,7 @@ class Mathy_Stuff_Holder:
   ### TODO: Really should make some sort of BeaconMeasurement() class that handles dBm/ SNR / .. conversion and comparison
 
 
+
 class ConfigC:  #Set-once configuration paramters (values do not change during main loop)
   BSSID=None
   SSID=None
@@ -172,8 +173,11 @@ class MainAppC:
       print("Error. Wrong DLT (not radiotap). Exiting")
       sys.exit(0)
 
-    #print("--%2d): #### AntTuner::SimpleProcessRadiotap" % (self.State.cnt))
+    print("--%2d): #### AntTuner::SimpleProcessRadiotap" % (self.State.cnt))
     rtap=pkt[RadioTap]
+    
+    ## TODO: JC: Dynamically generate format string (or use a contant width with variable prefix?)
+
     print("    Rate: %d Channel:%d dBm_AntSignal: %d  Lock_Quality: %d" % (rtap.Rate, rtap.Channel,  rtap.dBm_AntSignal, rtap.Lock_Quality))
 
 
@@ -293,8 +297,7 @@ class TargetCharacteristics:
 
     ret += "\n    Modulation:%s" % (self.modulation_info)
     print(ret)
-    input("summary end")
-
+    
 
   def init_main(self, pkt):
     P=pkt.getlayer(Dot11)
@@ -332,29 +335,15 @@ class TargetCharacteristics:
     self.summary()
     ######################################
 
-
-
-
-
-
-
-
-
-
-
-
-
-    print("####-TODO: following line, parse (at least hte 'top' level RTap headre)")
     ARrrs= Listify_Radiotap_Headers(pkt)
     top_rtap = ARrrs.pop()
     self.num_extra_measurements = len(ARrrs)
     print ("Num extra measurement on target:%d" % (self.num_extra_measurements))
-    print("##Channel precuror input: ")
 
-    idx=0
-    for p in ARrrs:
-      print("Ext-%d: AntSignal:(%d)" % (idx,p.dBm_AntSignal))
-      idx+=1
+    # idx=0
+    # for p in ARrrs:
+    #   print("Ext-%d: AntSignal:(%d)" % (idx,p.dBm_AntSignal))
+    #   idx+=1
 
     input("")
 
@@ -368,7 +357,7 @@ def GetFirstBeacon(pkt):
   T = TargetCharacteristics()
   T.init(pkt)
 
-  input("###^^How does that look in terms of meta info?")
+  print("###^^How does that look in terms of meta info?")
   #T.init(pkt)
   #ssid=str(pkt.getlayer(Dot11).info) #XXX This conveniently contains SSID (IELement 0. But this isnt a great approach)
   #print("SSID: %s" % (ssid))

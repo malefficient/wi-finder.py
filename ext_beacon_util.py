@@ -64,12 +64,10 @@ class rates_descriptor_t:
         self.process_rate(t.info)
 
     print("    rates_descriptor_t::process() done.  Curr min/max: %s %s" % (self.minnie_rate, self.min_Basic_rate)) 
-    input("L")   
 
   def __str__(self):
     print("    rates_descriptor_t::toString::Start")
-    print("     Ssanity check min/max: %s %s" % (self.minnie_rate, self.min_Basic_rate)) 
-    input("")
+    print("     Sanity check min/max: %s %s" % (self.minnie_rate, self.min_Basic_rate)) 
     ret=""
     ret+= "min_rate:%s min_basic_rate:%s max_rate:%s max_basic_rate:%s" % (self.minnie_rate, self.min_Basic_rate, self.max_rate, self.max_Basic_rate)
     ret+="Rates_List: %s" % (self.rates_list)
@@ -171,8 +169,8 @@ class modulation_descriptor_t:
     tag_61_HT = return_IE_by_tag(pkt, 61)
     if (tag_61_HT != None):
       print("This is where we process Dot11N Rates")
-      tag_61_HT.show2()
-      input("")
+      #tag_61_HT.show2()
+      #input("")
       
     ##
   def do_dot11_letter_soup(self, pkt):
@@ -261,8 +259,7 @@ class TargetCharacteristics:
 
     ret += "\n    Modulation:%s" % (self.modulation_info)
     print(ret)
-    input("summary end")
-
+    
 
   def init_main(self, pkt):
     P=pkt.getlayer(Dot11)
@@ -287,16 +284,11 @@ class TargetCharacteristics:
     #### 802.11 5Ghz/2Ghz detection? What does the channel say for an 11a network?
 
    
-    
-    #print("## Rates: len:(%d), %s" % (tag_1_rates.len, tag_1_rates.info))
-    #input("")
-
    
     ## ID=11: "QBSS Load element" (sta_count, channel utilization, )
     ## ID=23: TPC (TransmitSignal Strength report? ?) #QQQ  
     ## ID=33:  IEEE80211_IE_POWER_CAPAB        33
-  
-    ## ID=45: HT Capabilites (802.11N D1.10). Complicated.
+   ## ID=45: HT Capabilites (802.11N D1.10). Complicated.
     ##      \ TxBeamForming, AntennaSelection, HTCapabilites(20Mhz only, 40MHz intolerant), MCS Set, SecondarychjannelOffset
     ##
     ## 221/50:6f:9a: (WiFi alliance)/Type 9: WiFi alliance P2P info? 
@@ -328,9 +320,6 @@ class TargetCharacteristics:
     for p in ARrrs:
       print("Ext-%d: AntSignal:(%d)" % (idx,p.dBm_AntSignal))
       idx+=1
-
-    input("")
-
 
 def GetFirstBeacon(pkt):
   print("####GetFirstBeacon::Start")
