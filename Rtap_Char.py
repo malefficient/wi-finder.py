@@ -21,11 +21,13 @@ class MeasureyM:
   def __init__(self):  
     print("####MeasureyM::init")
     self.Measurey_Map = {}
-    self.num_processed_rtaps=0
+
     for b in self._rt_relevant_bits:
       self.Measurey_Map[b] =  [] #Clear old lists
       
-
+  def __len__(self):
+    ret = len(list(self.Measurey_Map.values())[0]) ## ("Ret: %d (len of arbitray value in dict)" % (ret))
+    return ret
   ### Note: ProcessRtap must be passed the original RadioTap layer /with/ the ExtendedPresent bitmask(s) 
   ###       ProcessRtap will call Listify itself; allowing it to preserve the framing information when repeated antenna tags are present
   def ProcessExtendedRtap(self, R):
@@ -53,16 +55,16 @@ class MeasureyM:
           dirty=True
       #print("    XXX Aggregated %d packets, field: %d" % (idx, b))
       self.Measurey_Map[b].append(curr_l)
-     
+
   def Average(self):
     print("####MeasureyM::Flatten/Average()")
     RetM=MeasureyM() 
     for b in self._rt_relevant_bits:
       n=len(self.Measurey_Map[b])
       #print("    Flattening field:(%d) - (%d) entries" % (b,n))
-      res = [sum(i) for i in zip(*self.Measurey_Map[b])]        #Fancy way to sum lists w/o requiring numpy
-      RetM.Measurey_Map[b] =  list(numpy.array(res)/n)             # temporarily convert results into numpy array for convenient list division
-    return(RetM)                                                   # NOTE: In the future we could perform more specific mathematic operations on a per field basis                                                                                        # But for now, simple average is fine. 
+      res = [sum(i) for i in zip(*self.Measurey_Map[b])]        # Fancy way to sum lists w/o requiring numpy
+      RetM.Measurey_Map[b] =  list(numpy.array(res)/n)          # temporarily convert results into numpy array for convenient list division
+    return(RetM)                                                # NOTE: In the future we could perform more specific mathematic operations on a per field basis                                                                        # But for now, simple average is fine. 
    
   def __add__(self, im):
     print("#### MeasureyM::__add__")

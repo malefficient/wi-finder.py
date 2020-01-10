@@ -11,7 +11,7 @@ from scapy.all import *
 
 from rtap_ext_util import Listify_Radiotap_Headers
 from ext_beacon_util import return_IE_by_tag, TargetCharacteristics
-from Rtap_Char import  MeasureyM, Flatten_and_Average_MeasureM_list
+from Rtap_Char import  MeasureyM
 
 from colorama import Fore, Back, Style
 
@@ -93,18 +93,10 @@ class StateC:  #All dynamic state associated with instance
   ### //This accounts for the fact that 'Extended' Antenna rtap headers typically start
   ### with AntennaID 0.
   
-  curr_avg_sig = 0
-  prev_avg_sig = 0
-  curr_sigdBms = []
+  
 
-  curr_avg_noise = 0
-  prev_avg_noise = 0
-  curr_noisedBms = []
-
-  pkt_measurements_curr = []
-  avg_pkt_measurements_curr = None
-  pkt_measurements_prev = None
-  avg_pkt_measurements_prev = None
+  pkt_measurements_curr = MeasureyM()
+  pkt_measurements_prev = MeasureyM()
 
   
 
@@ -133,30 +125,32 @@ class MainAppC:
     R=pkt[RadioTap]
     R=RadioTap(raw(R)[:R.len]) ## Trim  Radiotap down to only itself
   
-    reqd_rtap_pres = ['Rate', 'Channel', 'dBm_AntSignal'] #List of minimum set of viable radiotap fields to be useful
-    print("    Present: 0x%08x: " % int(R.present))
-    for k in reqd_rtap_pres:
-      print("Good: %s Marked present" %(k))
+    #reqd_rtap_pres = ['Rate', 'Channel', 'dBm_AntSignal'] #List of minimum set of viable radiotap fields to be useful
+    #print("    Present: 0x%08x: " % int(R.present))
+    #for k in reqd_rtap_pres:
+    #  print("Good: %s Marked present" %(k))
 
     ### Convert scapy-native radiotap layer into a more compact 'measurement' record  ###
     m= MeasureyM()
-    
-    hdr_list = Listify_Radiotap_Headers(pkt)
-    idx=0
-    for h in hdr_list:
-      m.ProcessRtap(h)
-      idx+=1
-    
-    self.State.pkt_measurements_curr.append(m)
-
+    m.ProcessExtendedRtap(pkt)
+    print("    (singleton)%s" % (m.Measurey_Map))
+    self.State.pkt_measurements_curr += (m)
+    print("    (Aggregate)%s" % (self.State.pkt_measurements_curr.Measurey_Map))
     ll = len(self.State.pkt_measurements_curr)
+    print("PRocessed counter count: %d" % (ll))
+    input("")
     if  ( ll < self.Config.pkts_per_avg):
       return
     else:
-      self.State.pkt_measurements_prev = self.State.pkt_measurements_curr                 #Store unflattened data
-      self.State.avg_pkt_measurements_prev = self.State.avg_pkt_measurements_curr         #Store flattened data
-      self.State.avg_pkt_measurements_curr = Flatten_and_Average_MeasureM_list(self.State.pkt_measurements_curr)      #Compute / Flatten into new average
-      self.State.pkt_measurements_curr = []                                                #Clear readings
+      self.State.avg_pkt_measurements_curr = self.State.pkt_measurements_curr.Average()
+      print(" ### Huzzah: Average:")
+      print("    %s"  % ( self.State.avg_pkt_measurements_curr.Measurey_Map))
+      input("   a  ")
+      sys.exit(0)
+      #self.State.pkt_measurements_prev = self.State.pkt_measurements_curr                 #Store unflattened data
+      #self.State.avg_pkt_measurements_prev = self.State.avg_pkt_measurements_curr         #Store flattened data
+      #self.State.avg_pkt_measurements_curr = Flatten_and_Average_MeasureM_list(self.State.pkt_measurements_curr)      #Compute / Flatten into new average
+      #self.State.pkt_measurements_curr = []                                                #Clear readings
 
   
      ########  special case: the first time through the loop 
