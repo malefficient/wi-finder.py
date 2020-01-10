@@ -5,62 +5,77 @@
 #
 #######
 
-##  RadioTap headers have evolved significantly. Some drivers include per-antenna signal / noise information
-##  Others provide 'overall' signal/noise, but also include exended Antenna fields.
-##
-##  When comparing signal strength, the details of how and where this information is encoded can by significant.
-##
-##
 import sys
 sys.path.append("./scapy")
 from scapy.all import *
-
-###########Organize me#####
-class RadiotapMeasurement1Dimensional():
-  Initialized = False
-  Antenna_Number = 0  #Ranges from 0-4. This value will be inferred from radiotap extended antenna field order when identifier is missing
-  dBm_AntSignal = None
-  dBm_AntNoise = None
-  Lock_Quality = None
-
-  #These fields seem like they should only be in a single dimension
-  Rate=1
-  Channel=None
-  def init(self, R):
-    if (type(R) != scapy.layers.dot11.RadioTap):
-      print("Error: RadiotapMeasurement1Dimensional passed invalid argument. ")
-      return
+from rtap_ext_util import RadiotapTable, Listify_Radiotap_Headers
 
 
-class RadiotapMeasurementNDimensional():
-  Initialized = False
-  TotalDimensions = 0
-  TopLevelReadings = RadiotapMeasurement1Dimensional()
-  IndividualAntennaReadings = []
+### For now, we only handle cases where the type/number of measurements are equivalent
+def Flatten_and_Average_MeasureM_list(L):
+    print("####MeasureyM::Average:")
+    print("#### Averaging a List of length:(%d)" %(len(L)))
+    for l in L:
+      print("    %s" % (l.Measurey_Map))
+    
+    print ("#### Okay dummy. Just for dummy math purposes, returning  last measure for now")
+    ret_m = L[0]
+    return ret_m
 
-  def Init(self, R):
-    if (type(R) != scapy.layers.dot11.RadioTap):
-      print("Error: RadiotapMeasurementNDimensional passed invalid argument. ")
-      return
+class MeasureyM:
+  rtap_table = RadiotapTable()
+  _rt_relevant_bits= [2,3,5,6,7]
+  num_updates=0
 
-    print("####RadiotapMeasurementNDimensional::Init")
-    R.show()
+  Measurey_Map={}
+  
+  def __init__(self):  
+    print("####MeasureyM::init")
+    self.Measurey_Map = {}
+    self.num_processed_rtaps=0
+    for b in self._rt_relevant_bits:
+      self.Measurey_Map[b] = [] #Clear old lists
+
+   
+  def Flatten(self):
+    print("MeasureyM::AverageSelf()")
+    print("    Averaging:(%d) unique records" % (self.num_updates))
+    print(self.Measurey_Map)
+    input("?")
+  
+  def ProcessRtap(self, R):
+    rtap_table_helper = RadiotapTable()
+    for b in self._rt_relevant_bits:
+      dirty=False
+      s=rtap_table_helper.bit_to_name(b)
+      ## Does passed in RadioTap layer have a relevent field?
+      v=R.getfieldval(s)
+      if (v == None):
+        continue
+      else:
+        self.Measurey_Map[b].append(v)
+        dirty=True
+      print("#### MeasuryM::ProcessRtap: Finished")
+      print(self.Measurey_Map)
+      
+    if (dirty):
+      self.num_processed_rtaps+=1
 
 
-class RadioTap_Profile_C:
-  rtap_prfile_type=1
+def cb_function(pkt):
+  global outfname
+  my_helper_table = RadiotapTable()
+  ret_list=Listify_Radiotap_Headers(pkt)
+  M = MeasureyM()
+  for r in ret_list:
+    M.ProcessRtap(r)
+  print("#### MeasureyMap to String:%s" % (M.Measurey_Map))
 
-  def RadioTap_Profile_C(self, R):
-    self.rtap_prfile_type=2
-    print("#### RadioTap_Profile_Char::")
-    R.summary()
+def main():
+  print("### Radiotap Characterizer:: Main")
+  #C = RadioTap_Profile_C()
+  sniff(prn=cb_function, offline=sys.argv[1], store=0, count=1)
+  sys.exit(0)
 
 if __name__=='__main__':
-  print("### Radiotap Characterizer:: Main")
-  C = RadioTap_Profile_C()
-  #sniff(prn=A.Simpl_Process_Radiotap, offline=A.Config.infile, store=0, count=60)
-  pktlist=rdpcap("tst.pcap")
-  p=pktlist[0]
-  p.show2()
-#  C.init(r)
-
+  main()
