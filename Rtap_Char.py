@@ -40,52 +40,75 @@ class MeasureyM:
     self.Measurey_Map = {}
     self.num_processed_rtaps=0
     for b in self._rt_relevant_bits:
-      self.Measurey_Map[b] = [] #Clear old lists
+      self.Measurey_Map[b] =  [] #Clear old lists
+      
 
- 
-  def Flatten(self):
-    print("MeasureyM::AverageSelf()")
-    print("    Averaging:(%d) unique records" % (self.num_updates))
-    print(self.Measurey_Map)
-    input("?")
   
   
-  def _process_individual_rtap(self, R):
-    print("####_process_individual_rtap::start")
   ### Note: ProcessRtap must be passed the original RadioTap layer /with/ the ExtendedPresent bitmask(s) 
-  ###       It will call Listify itself; allowing it to preserve the framing information when repeated antenna tags are present
+  ###       ProcessRtap will call Listify itself; allowing it to preserve the framing information when repeated antenna tags are present
   def ProcessExtendedRtap(self, R):
     rtap_table_helper = RadiotapTable()
     hdr_list = Listify_Radiotap_Headers(R)
     print("### ProcessRadioTap now down with its own listify")
     print("#### Listify returned %d headres" % (len(hdr_list)))
-    for r in hdr_list:
-      #print (r.summary())
-      #r.show2()
-      for b in self._rt_relevant_bits:
-        dirty=False
-        s=rtap_table_helper.bit_to_name(b)
+    idx=0
+
+    for b in self._rt_relevant_bits:
+      idx=0
+      s=rtap_table_helper.bit_to_name(b)
+      
+      curr_l=[]
+      idx=0
+      for r in hdr_list:
+        idx+=1
+        #print("     ###ProcessExtRtap: Bit:(%d),  pkt_hdr:(%d)" % (b, idx))
+        
         ## Does passed in RadioTap layer have a relevent field?
         v=r.getfieldval(s)
         if (v == None):
           continue
         else:
-          self.Measurey_Map[b].append(v)
+          #print("         ProcessExtRtap(%d) Bit(%d)" % (idx, b))
+          #input("")
+          curr_l.append(v)
           dirty=True
-        #input(".")
+      #print("    XXX Aggregated %d packets, field: %d" % (idx, b))
+      self.Measurey_Map[b].append(curr_l)
+      #input(".")
       #print(self.Measurey_Map)
-    if (dirty):
-      self.num_processed_rtaps+=1
+      # if (len(curr_l) > 0):
+      #   self.Measurey_Map[b].append(curr_l)  ## /* list of lists */
+    #print("#### Returning MEasureyMap: %s" % (self.Measurey_Map))
+    #input(".")
+  def Flatten(self):
+    print("MeasureyM::Flatten()")
+    for k in self.Measurey_Map.keys():
+      print("    Processing bit:(%d)  num_entries:%d" % (k, len(self.Measurey_Map[k])))
+      print("    %s" % (self.Measurey_Map[k]))
+      for v in self.Measurey_Map[k]:
+        print("       (%s)   MergeWithMAth()" % (v))
+      print("    ---------------")
 
   def Absorb(self, im):
-    print("#### MeasureyM::ImportM")
+    print("#### MeasureyM::Absorb")
 
     print("    Self.Measurey_Map: %s" % (self.Measurey_Map))
     print("    + + + + + ")
     print("    im.Measurey_Map:   %s"    % (im.Measurey_Map))
     print("    -----------")
+
+    for b in self._rt_relevant_bits:
+      if (im.Measurey_Map[b] == None):
+        print("    MeasureyM.Absorb:: Unexpected error accessing field %d in input" % (b))
+        input("X")
+        sys.exit(0)
+      #print("   Bit:(%d) Absorb:: processing: type(%s)" % (b, type(im.Measurey_Map[b])))
+      #input("")
+      self.Measurey_Map[b] += im.Measurey_Map[b]
+
     print("    Merge results here.")
-    ### TODO: Wrap Mergey_Map[1] in an extra list dimension for grouping?
+    print("Result: %s" % (self.Measurey_Map))    ### TODO: Wrap Mergey_Map[1] in an extra list dimension for grouping?
     input("####  ####")
     #ret_M = {**self.Measurey_Map, **im.Measurey_Map} #//https://stackoverflow.com/questions/38987/how-do-i-merge-two-dictionaries-in-a-single-expression
     # JC Start above ^^
@@ -122,10 +145,13 @@ def test_measureym_import():
   #sys.exit(0)
   ## First things first: Attempt 'Importing' (Absorbing?) M1 into empty RetM
   #M1.Absorb(M2)
-  RetM=M1
-  RetM.Absorb(M2)
-  print("### RetM (stage1) : (%s)" % (RetM.Measurey_Map))
-  
+  M3=M1
+  M3.Absorb(M2)
+
+  print("### M3 (Merged) : (%s)" % (M3.Measurey_Map))
+  print("#### M3 (Flattened) :")
+  M3.Flatten()
+  print("     %s" % (M3.Measurey_Map))
 
 def cb_function(pkt):
   global outfname
