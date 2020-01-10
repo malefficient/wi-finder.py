@@ -1,3 +1,3 @@
 # wi-finder.py
 
-Experimental Radiotap analysis engine
+Experimental Radiotap analysis engine.
