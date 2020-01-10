@@ -17,42 +17,6 @@ from scapy.all import *
 from rtap_ext_util import RadiotapTable, Listify_Radiotap_Headers
 
 
-
-
-
-###########Organize me#####
-class RadiotapMeasurement1Dimensional():
-  Initialized = False
-  Antenna_Number = 0  #Ranges from 0-4. This value will be inferred from radiotap extended antenna field order when identifier is missing
-  dBm_AntSignal = None
-  dBm_AntNoise = None
-  Lock_Quality = None
-
-  #These fields seem like they should only be in a single dimension
-  Rate=1
-  Channel=None
-  def init(self, R):
-    if (type(R) != scapy.layers.dot11.RadioTap):
-      print("Error: RadiotapMeasurement1Dimensional passed invalid argument. ")
-      return
-
-
-class RadiotapMeasurementNDimensional():
-  Initialized = False
-  TotalDimensions = 0
-  TopLevelReadings = RadiotapMeasurement1Dimensional()
-  IndividualAntennaReadings = []
-
-  def Init(self, R):
-    if (type(R) != scapy.layers.dot11.RadioTap):
-      print("Error: RadiotapMeasurementNDimensional passed invalid argument. ")
-      return
-
-    print("####RadiotapMeasurementNDimensional::Init")
-    R.show()
-
-
-
 ### For now, we only handle cases where the type/number of measurements are equivalent
 def Flatten_and_Average_MeasureM_list(L):
     print("####MeasureyM::Average:")
@@ -63,6 +27,7 @@ def Flatten_and_Average_MeasureM_list(L):
     print ("#### Okay dummy. Just for dummy math purposes, returning  last measure for now")
     ret_m = L[0]
     return ret_m
+
 class MeasureyM:
   rtap_table = RadiotapTable()
   _rt_relevant_bits= [2,3,5,6,7]
@@ -102,19 +67,21 @@ class MeasureyM:
     if (dirty):
       self.num_processed_rtaps+=1
 
+
 def cb_function(pkt):
   global outfname
   my_helper_table = RadiotapTable()
   ret_list=Listify_Radiotap_Headers(pkt)
   M = MeasureyM()
-  M.init()
   for r in ret_list:
-    M.Update(r)
+    M.ProcessRtap(r)
   print("#### MeasureyMap to String:%s" % (M.Measurey_Map))
-if __name__=='__main__':
+
+def main():
   print("### Radiotap Characterizer:: Main")
-  C = RadioTap_Profile_C()
+  #C = RadioTap_Profile_C()
   sniff(prn=cb_function, offline=sys.argv[1], store=0, count=1)
   sys.exit(0)
-#  C.init(r)
 
+if __name__=='__main__':
+  main()
