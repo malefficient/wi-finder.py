@@ -152,7 +152,8 @@ def Listify_Radiotap_Headers(pkt):
 
   fixed_list_ret.append(RadioTap(raw(R0)))
   if (num_extended_rtaps == 0):
-    print("Simple(er) case. No extended fields to parse")
+    
+    #print("Simple(er) case. No extended fields to parse")
     return fixed_list_ret
 
   ######### Start Parsing the extended headers
@@ -188,7 +189,7 @@ def Listify_Radiotap_Headers(pkt):
     buff_notdecoded_yet = pkt.getlayer(RadioTap).notdecoded[nbytes_consumed_so_far:]
     lamb_r_buff += buff_notdecoded_yet
     ## We now have a buffer laid out that starts with a valid radiotap header,
-    ## followed by an array of bytes that starts with the correct payload,
+    ## followed by an array of bytes that starts with (but may contain more than) the correct payload,
 
     ## ask scapy to interpret the newly refreshed bitmask. Compute RadioTap.len for us
     Lamb_R = RadioTap(raw(RadioTap(lamb_r_buff, len=None)))

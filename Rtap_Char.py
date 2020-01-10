@@ -49,46 +49,54 @@ class MeasureyM:
     print(self.Measurey_Map)
     input("?")
   
-  def ProcessRtap(self, R):
+  
+  def _process_individual_rtap(self, R):
+    print("####_process_individual_rtap::start")
+  ### Note: ProcessRtap must be passed the original RadioTap layer /with/ the ExtendedPresent bitmask(s) 
+  ###       It will call Listify itself; allowing it to preserve the framing information when repeated antenna tags are present
+  def ProcessExtendedRtap(self, R):
     rtap_table_helper = RadiotapTable()
-    for b in self._rt_relevant_bits:
-      dirty=False
-      s=rtap_table_helper.bit_to_name(b)
-      ## Does passed in RadioTap layer have a relevent field?
-      v=R.getfieldval(s)
-      if (v == None):
-        continue
-      else:
-        self.Measurey_Map[b].append(v)
-        dirty=True
-      print("#### MeasuryM::ProcessRtap: Finished")
-      print(self.Measurey_Map)
-      
+    hdr_list = Listify_Radiotap_Headers(R)
+    print("### ProcessRadioTap now down with its own listify")
+    print("#### Listify returned %d headres" % (len(hdr_list)))
+    for r in hdr_list:
+      #print (r.summary())
+      #r.show2()
+      for b in self._rt_relevant_bits:
+        dirty=False
+        s=rtap_table_helper.bit_to_name(b)
+        ## Does passed in RadioTap layer have a relevent field?
+        v=r.getfieldval(s)
+        if (v == None):
+          continue
+        else:
+          self.Measurey_Map[b].append(v)
+          dirty=True
+        #input(".")
+      #print(self.Measurey_Map)
     if (dirty):
       self.num_processed_rtaps+=1
 
-  def ImportM(self, o):
+  def Absorb(self, im):
     print("#### MeasureyM::ImportM")
 
-    print("#### Self.Measurey_Map:\n    %s" % (self.Measurey_Map))
-    print("#### o.Measurey_Map:\n    %s"    % (o.Measurey_Map))
-    input("#### K ####")
-    ret_M = {**self.Measurey_Map, **o.Measurey_Map} #//https://stackoverflow.com/questions/38987/how-do-i-merge-two-dictionaries-in-a-single-expression
+    print("    Self.Measurey_Map: %s" % (self.Measurey_Map))
+    print("    + + + + + ")
+    print("    im.Measurey_Map:   %s"    % (im.Measurey_Map))
+    print("    -----------")
+    print("    Merge results here.")
+    ### TODO: Wrap Mergey_Map[1] in an extra list dimension for grouping?
+    input("####  ####")
+    #ret_M = {**self.Measurey_Map, **im.Measurey_Map} #//https://stackoverflow.com/questions/38987/how-do-i-merge-two-dictionaries-in-a-single-expression
     # JC Start above ^^
-    RetM = MeasureyM()
-    RetM.Measurey_Map = ret_M
+
+    #RetM = MeasureyM()
+   # RetM.Measurey_Map = ret_M
+   # print("###Absormed cross product###")
+   # print(RetM.Measurey_Map)
    # for b in self._rt_relevant_bits:
    #   self.Measurey_Map[b] = 
 
-
-def cb_function(pkt):
-  global outfname
-  my_helper_table = RadiotapTable()
-  ret_list=Listify_Radiotap_Headers(pkt)
-  M = MeasureyM()
-  for r in ret_list:
-    M.ProcessRtap(r)
-  print("#### MeasureyMap to String:%s" % (M.Measurey_Map))
 
 def test_measureym_import():
   M1 = MeasureyM()
@@ -102,23 +110,36 @@ def test_measureym_import():
   RTL2=Listify_Radiotap_Headers(pktlist[1])
 
   ## Generate aggregated Measuremeny across Extended rtap fields
-  for r in Listify_Radiotap_Headers(pktlist[0]):
-    M1.ProcessRtap(r)
+  M1.ProcessExtendedRtap(pktlist[0])
   print("####Packet 1 ######")
-  input("?")
-  for r in Listify_Radiotap_Headers(pktlist[1]):
-    M2.ProcessRtap(r)
+  print(M1.Measurey_Map)
+  #input("Packet1 ?")
+ 
+  M2.ProcessExtendedRtap(pktlist[1])
   print("####Packet 2 ######")
-  input("?")
-
+  print(M2.Measurey_Map)
+  #input("Packet 2?")
+  #sys.exit(0)
   ## First things first: Attempt 'Importing' (Absorbing?) M1 into empty RetM
-  RetM.ImportM(M1)
+  #M1.Absorb(M2)
+  RetM=M1
+  RetM.Absorb(M2)
   print("### RetM (stage1) : (%s)" % (RetM.Measurey_Map))
   
+
+def cb_function(pkt):
+  global outfname
+  my_helper_table = RadiotapTable()
+  ret_list=Listify_Radiotap_Headers(pkt)
+  M = MeasureyM()
+  for r in ret_list:
+    M.ProcessRtap(r)
+  print("#### MeasureyMap to String:%s" % (M.Measurey_Map))
+
 def main():
   print("### Radiotap Characterizer:: Main")
   test_measureym_import()
-  print("Exiting exarly.")
+  print("main() Exiting.")
   sys.exit(0)
   #C = RadioTap_Profile_C()
   sniff(prn=cb_function, offline=sys.argv[1], store=0, count=1)
