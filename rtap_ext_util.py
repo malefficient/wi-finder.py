@@ -221,7 +221,6 @@ class RadiotapTable():
     return None
 
   def bit_to_name(self, b):
-    print("RadioTapTable::bit_to_descr(%d): %s" % (b, self._rt_present[b]))
     return self._rt_present[b]
 
   def bit_to_name_alt(self, b):

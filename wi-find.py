@@ -59,6 +59,7 @@ class ConfigC:  #Set-once configuration paramters (values do not change during m
 ### StateC.AntennaMeasureList = []
 ##### StateC.AntennaMeasureList[BitB] = list(measurements for Rtap field BitB)
 
+
 class StateC:  #All dynamic state associated with instance
   cnt=0
 

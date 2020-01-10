@@ -14,31 +14,10 @@
 import sys
 sys.path.append("./scapy")
 from scapy.all import *
+from rtap_ext_util import RadiotapTable, Listify_Radiotap_Headers
 
-class MeasureyM:
-  L_Lock=[]
-  L_dBm_AntSignal=[]
-  L_dBm_AntNoise=[]
 
-  Measurey_Map={}
 
-  
-  curr_avg_sig = 0
-  prev_avg_sig = 0
-  curr_sigdBms = []
-
-  L_observed_chan=None
-  advertised_chan=None
-  
-  def Update(self, R):
-    if ("A" == "Blah"):
-      print("GarbldeyGook")
-    ###PseudoCode:
-    ### for bit B in R.present
-    ### self.Measurey_Map[B].append R.value_for_B     
-  def init(self, R):
-    if ('Lock_Quality' in R.present):
-      self.Lock = R.Lock_Quality
 
 
 ###########Organize me#####
@@ -81,12 +60,46 @@ class RadioTap_Profile_C:
     print("#### RadioTap_Profile_Char::")
     R.summary()
 
+class MeasureyM:
+  rtap_table = RadiotapTable()
+  _rt_relevant_bits= [2,3,5,6,7]
+
+  Measurey_Map={}
+
+
+  def init(self):  
+    print("####MeasureyM::init")
+    for i in self._rt_relevant_bits:
+      self.Measurey_Map[i] = [] #Clear old lists
+  def Update(self, R):
+    #print("MeasureyM::Update()")
+    #Request all revelent rtap fields
+    for b in self._rt_relevant_bits:
+      s=self.rtap_table.bit_to_name(b)
+      #print("####MeasuryMap: Looking for rtap bit num: %d (%s)" % (b,s))
+      ##Seems kind of silly, but I do not think native RadioTap layers in scapy can be easily retrieved by the relevent bit number in present.
+      ## Does passed in RadioTap layer have a relevent field?
+      v=R.getfieldval(s)
+      if (v == None):
+        continue
+
+      self.Measurey_Map[b].append(v)
+   
+
+
+def cb_function(pkt):
+  global outfname
+  my_helper_table = RadiotapTable()
+  ret_list=Listify_Radiotap_Headers(pkt)
+  M = MeasureyM()
+  M.init()
+  for r in ret_list:
+    M.Update(r)
+  print("#### MeasureyMap to String:%s" % (M.Measurey_Map))
 if __name__=='__main__':
   print("### Radiotap Characterizer:: Main")
   C = RadioTap_Profile_C()
-  #sniff(prn=A.Simpl_Process_Radiotap, offline=A.Config.infile, store=0, count=60)
-  pktlist=rdpcap("tst.pcap")
-  p=pktlist[0]
-  p.show2()
+  sniff(prn=cb_function, offline=sys.argv[1], store=0, count=1)
+  sys.exit(0)
 #  C.init(r)
 
