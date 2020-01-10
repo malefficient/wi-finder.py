@@ -52,13 +52,6 @@ class RadiotapMeasurementNDimensional():
     R.show()
 
 
-class RadioTap_Profile_C:
-  rtap_prfile_type=1
-
-  def RadioTap_Profile_C(self, R):
-    self.rtap_prfile_type=2
-    print("#### RadioTap_Profile_Char::")
-    R.summary()
 
 ### For now, we only handle cases where the type/number of measurements are equivalent
 def Flatten_and_Average_MeasureM_list(L):

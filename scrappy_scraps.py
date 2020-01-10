@@ -153,3 +153,26 @@ class xxx_TargetCharacteristics:
     for p in ARrrs:
       print("Ext-%d: AntSignal:(%d)" % (idx,p.dBm_AntSignal))
       idx+=1
+
+
+
+class Mathy_Stuff_Holder:
+
+  def Compare_dBm(self, a, b):
+  # For a good explanation of all these negative numbers:
+  # https://community.cisco.com/t5/small-business-support-documents/why-is-almost-everything-negative-in-wireless/ta-p/3159743
+  # 1dBm = 1.258925 mW
+
+    deltaDbm = 1.0 * abs(a - b)
+    #print("    deltaDbm(%d,%d) = %d" % (a,b, deltaDbm))
+    return deltaDbm
+
+  ### Comparing dBm: How do i always forget this formula?
+  ### Quick note: The 'old' version (ap-finder.c) simply told you if curr_avg was (Better, equal, Worse) than prev_avg
+  ###             This actually does not require us to work/convert into/from a logarithmic scale.
+  ###             -50 is better than -51. The Distance is irrelvant (sortof.)
+  def RateSelf(self):
+    #print("    RateSelf(%3d,%3d)" % (self.prev_avg, self.curr_avg))
+    print("    Delta_dBm (%3d, %3d) = %2d" % ( self.State.curr_avg,  self.State.prev_avg, self.Compare_dBm(self.State.curr_avg, self.State.prev_avg)))
+    print("    Delta_dBm (%3d, %3d) = %2d " % ( self.State.curr_avg, self.Config.Ref_dBm, self.Compare_dBm(self.State.curr_avg, self.Config.Ref_dBm)))
+  ### TODO: Really should make some sort of BeaconMeasurement() class that handles dBm/ SNR / .. conversion and comparison

@@ -261,6 +261,7 @@ class TargetCharacteristics:
   def init(self, pkt): # Targetcharacteristics
     self._inital_beacon = pkt
     print("####TargetCharecteristics::init")
+    input("ParseingTargetBeaon")
     R=pkt.getlayer(RadioTap)
     r=RadioTap( raw(R)[:R.len] )
 
