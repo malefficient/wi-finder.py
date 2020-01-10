@@ -20,6 +20,12 @@ def Flatten_and_Average_MeasureM_list(L):
     
     print ("#### Okay dummy. Just for dummy math purposes, returning  last measure for now")
     ret_m = L[0]
+    ##XXX: JC  Resume here !
+    ## Todo:  YYY 
+    ## * create a MeasureyM.Import(self, right)
+    ## for each relevant_bit b
+    ##   self.Measurey_Map[b] += right.Measurey_Map
+
     return ret_m
 
 class MeasureyM:
@@ -36,7 +42,7 @@ class MeasureyM:
     for b in self._rt_relevant_bits:
       self.Measurey_Map[b] = [] #Clear old lists
 
-   
+ 
   def Flatten(self):
     print("MeasureyM::AverageSelf()")
     print("    Averaging:(%d) unique records" % (self.num_updates))
@@ -61,6 +67,19 @@ class MeasureyM:
     if (dirty):
       self.num_processed_rtaps+=1
 
+  def ImportM(self, o):
+    print("#### MeasureyM::ImportM")
+
+    print("#### Self.Measurey_Map:\n    %s" % (self.Measurey_Map))
+    print("#### o.Measurey_Map:\n    %s"    % (o.Measurey_Map))
+    input("#### K ####")
+    ret_M = {**self.Measurey_Map, **o.Measurey_Map} #//https://stackoverflow.com/questions/38987/how-do-i-merge-two-dictionaries-in-a-single-expression
+    # JC Start above ^^
+    RetM = MeasureyM()
+    RetM.Measurey_Map = ret_M
+   # for b in self._rt_relevant_bits:
+   #   self.Measurey_Map[b] = 
+
 
 def cb_function(pkt):
   global outfname
@@ -71,10 +90,39 @@ def cb_function(pkt):
     M.ProcessRtap(r)
   print("#### MeasureyMap to String:%s" % (M.Measurey_Map))
 
+def test_measureym_import():
+  M1 = MeasureyM()
+  M2 = MeasureyM()
+  RetM = MeasureyM()
+  
+  ##Read in test input
+  pktlist=rdpcap(sys.argv[1], count=2)
+  print("Two packets read in for test")
+  RTL1=Listify_Radiotap_Headers(pktlist[0])
+  RTL2=Listify_Radiotap_Headers(pktlist[1])
+
+  ## Generate aggregated Measuremeny across Extended rtap fields
+  for r in Listify_Radiotap_Headers(pktlist[0]):
+    M1.ProcessRtap(r)
+  print("####Packet 1 ######")
+  input("?")
+  for r in Listify_Radiotap_Headers(pktlist[1]):
+    M2.ProcessRtap(r)
+  print("####Packet 2 ######")
+  input("?")
+
+  ## First things first: Attempt 'Importing' (Absorbing?) M1 into empty RetM
+  RetM.ImportM(M1)
+  print("### RetM (stage1) : (%s)" % (RetM.Measurey_Map))
+  
 def main():
   print("### Radiotap Characterizer:: Main")
+  test_measureym_import()
+  print("Exiting exarly.")
+  sys.exit(0)
   #C = RadioTap_Profile_C()
   sniff(prn=cb_function, offline=sys.argv[1], store=0, count=1)
+  #YYY: JC: For MeasureyM.ImportM(, crea)
   sys.exit(0)
 
 if __name__=='__main__':
