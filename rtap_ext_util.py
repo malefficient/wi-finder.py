@@ -50,7 +50,7 @@ def RoundPresentFlags2NoExtended(r):
 ##          Expected value: between 0 and 5 (inclusive)
 def CountUsefulRadiotapEntries(pkt):  #In this context 'Useful' is defined as
   ret = 0
-  print("    ####CountUsefulRadiotapEntries::Start")
+  #print("    ####CountUsefulRadiotapEntries::Start")
   #pkt.show2()
   if ( not pkt.haslayer(RadioTap)):
     return 0

@@ -9,13 +9,13 @@
 import sys
 import getopt
 import re
-
+import copy
 from colorama import Fore, Back, Style
 from scapy.all import *
 from rtap_ext_util import Listify_Radiotap_Headers
 from ext_beacon_util import rates_descriptor_t, modulation_descriptor_t, return_IE_by_tag
 
-from Rtap_Char import RadioTap_Profile_C, MeasureyM
+from Rtap_Char import RadioTap_Profile_C, MeasureyM, Flatten_and_Average_MeasureM_list
 
 def Usage():
   print("Usage: %s -b <BSSID> -i <input>" % (sys.argv[0]))
@@ -51,7 +51,7 @@ class ConfigC:  #Set-once configuration paramters (values do not change during m
   sniff_mode=None #  Valid options: 'offline' (pcap file) or 'iface' (self-descr)
   Ref_dBm=-40   #Pick an arbitrary (but consistent) 'standard candle'
 
-  pkts_per_avg=5
+  pkts_per_avg=3
 
 
 ### JC: TODO: 
@@ -63,7 +63,6 @@ class ConfigC:  #Set-once configuration paramters (values do not change during m
 class StateC:  #All dynamic state associated with instance
   cnt=0
 
-  TopR = MeasureyM()
   RecordList=[]
   ### TODO: 
   ### YYY: *Hmm*. What would be ideal is a simple Map of AntennaId->List(MeasureyM's)
@@ -86,7 +85,8 @@ class StateC:  #All dynamic state associated with instance
   ### MeasureyM.update(R)
   ### ## M.cnt+=1
   ### ## M.AntSignal_List = []
-  AntennaMeasureList = []
+
+  
   curr_avg_sig = 0
   prev_avg_sig = 0
   curr_sigdBms = []
@@ -94,6 +94,15 @@ class StateC:  #All dynamic state associated with instance
   curr_avg_noise = 0
   prev_avg_noise = 0
   curr_noisedBms = []
+
+
+  pkt_measurements_curr = []
+  avg_pkt_measurements_curr = None
+  pkt_measurements_prev = None
+  avg_pkt_measurements_prev = None
+  
+
+  #curr_measurement_avg = MeasureyM()
 
   ### Set of _Minimum_ fields present
 
@@ -103,7 +112,7 @@ class StateC:  #All dynamic state associated with instance
 
   curr_c = 0     #TODO Replace with call to len
 
-  num_times_before_reprinting_network_header=6
+  num_times_before_reprinting_network_header=3
 
 
   def init(self):
@@ -204,7 +213,60 @@ class MainAppC:
     R=pkt[RadioTap]
     R=RadioTap(raw(R)[:R.len]) ## Trim  Radiotap down to only itself
 
-    ### Update records (mathh ###
+    ### Convert scapy-native radiotap layer into a more compact 'measurement' record  ###
+    m= MeasureyM()
+    #m.init()
+    
+    hdr_list = Listify_Radiotap_Headers(pkt)
+    idx=0
+    for h in hdr_list:
+      m.ProcessRtap(h)
+      idx+=1
+    #print(m.Measurey_Map)
+    #print("####### End rtap header list. Signal should have _Five_ values  #######")
+    #input("    ##OK?")
+
+    #self.State.pkt_measurements_curr.append(copy.deepcopy(m)) #XXX Do a deep copy? 
+    self.State.pkt_measurements_curr.append(m)
+
+    ll = len(self.State.pkt_measurements_curr)
+    if  ( ll < self.Config.pkts_per_avg):
+      return
+    else:
+      ##print(" Hit length = num_pkts_to_avg case.  ll:(%d)" % (ll))
+      ##input("About to go through the list before calling average.")
+      ##idx=0
+      ##for x in  self.State.pkt_measurements_curr:
+      ##  print ("_____(%d):   %s" % (idx, x.Measurey_Map))
+      ##input(".")
+      ##print("-------- Oka. Were those unique?----")
+      ##input("?")
+      ##input("         ---About to call Flatten_and_Average_lsit: ")
+      self.State.pkt_measurements_prev = self.State.pkt_measurements_curr                 #Store unflattened data
+      self.State.avg_pkt_measurements_prev = self.State.avg_pkt_measurements_curr         #Store flattened data
+
+      f = Flatten_and_Average_MeasureM_list(self.State.pkt_measurements_curr)  #Compute / Flatten into new average
+      #print ("     Flatten and average returned: type:(%s)" % (type(f)))
+      self.State.avg_pkt_measurements_curr = f
+      #print ("     Flatten and average returned: type:(%s)" % (type(f)))
+      #input("Asigned f to State.avg_pkt_measurements_curr")
+      print(self.State.avg_pkt_measurements_curr.Measurey_Map)
+      self.State.pkt_measurements_curr = []                                     #Clear readings
+
+  
+     ######## 
+    if (self.State.avg_pkt_measurements_prev == None):
+      return
+
+    print("    Prev_Avg: (%s) %s " % (self.State.avg_pkt_measurements_prev, self.State.avg_pkt_measurements_prev.Measurey_Map))
+    print("    Curr_Avg: (%s) %s " % (self.State.avg_pkt_measurements_curr, self.State.avg_pkt_measurements_curr.Measurey_Map))
+    input("How do those compare?Good?")
+
+    #sys.exit(0)
+    ########
+    #print("Returning early!")
+    return 
+
     if (len(self.State.curr_sigdBms) < self.Config.pkts_per_avg):
       self.State.curr_sigdBms.append(R.dBm_AntSignal)
       #self.State.curr_noisedBms.append(R.dBm_AntNoise)

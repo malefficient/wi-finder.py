@@ -60,32 +60,54 @@ class RadioTap_Profile_C:
     print("#### RadioTap_Profile_Char::")
     R.summary()
 
+### For now, we only handle cases where the type/number of measurements are equivalent
+def Flatten_and_Average_MeasureM_list(L):
+    print("####MeasureyM::Average:")
+    print("#### Averaging a List of length:(%d)" %(len(L)))
+    for l in L:
+      print("    %s" % (l.Measurey_Map))
+    
+    print ("#### Okay dummy. Just for dummy math purposes, returning  last measure for now")
+    ret_m = L[0]
+    return ret_m
 class MeasureyM:
   rtap_table = RadiotapTable()
   _rt_relevant_bits= [2,3,5,6,7]
+  num_updates=0
 
   Measurey_Map={}
-
-
-  def init(self):  
+  
+  def __init__(self):  
     print("####MeasureyM::init")
-    for i in self._rt_relevant_bits:
-      self.Measurey_Map[i] = [] #Clear old lists
-  def Update(self, R):
-    #print("MeasureyM::Update()")
-    #Request all revelent rtap fields
+    self.Measurey_Map = {}
+    self.num_processed_rtaps=0
     for b in self._rt_relevant_bits:
-      s=self.rtap_table.bit_to_name(b)
-      #print("####MeasuryMap: Looking for rtap bit num: %d (%s)" % (b,s))
-      ##Seems kind of silly, but I do not think native RadioTap layers in scapy can be easily retrieved by the relevent bit number in present.
+      self.Measurey_Map[b] = [] #Clear old lists
+
+   
+  def Flatten(self):
+    print("MeasureyM::AverageSelf()")
+    print("    Averaging:(%d) unique records" % (self.num_updates))
+    print(self.Measurey_Map)
+    input("?")
+  
+  def ProcessRtap(self, R):
+    rtap_table_helper = RadiotapTable()
+    for b in self._rt_relevant_bits:
+      dirty=False
+      s=rtap_table_helper.bit_to_name(b)
       ## Does passed in RadioTap layer have a relevent field?
       v=R.getfieldval(s)
       if (v == None):
         continue
-
-      self.Measurey_Map[b].append(v)
-   
-
+      else:
+        self.Measurey_Map[b].append(v)
+        dirty=True
+      print("#### MeasuryM::ProcessRtap: Finished")
+      print(self.Measurey_Map)
+      
+    #if (dirty):
+    #  self.num_processed_rtaps+=1
 
 def cb_function(pkt):
   global outfname
