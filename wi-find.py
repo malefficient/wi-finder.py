@@ -25,7 +25,7 @@ class ConfigC:  #Set-once configuration paramters (values do not change during m
   SSID=None
   input_src=None    # 'en0', file.pcap, ...
   sniff_mode=None #  Valid options: 'offline' (pcap file) or 'iface' (self-descr)
-  pkts_per_avg=3
+  pkts_per_avg=5
   
   def Parse_Args(self):
       print("#### Parse_Args: Start")
@@ -83,21 +83,14 @@ class ConfigC:  #Set-once configuration paramters (values do not change during m
 
 class StateC:  #All dynamic state associated with instance
   cnt=0
-
-  RecordList=[]
-  ### TODO: 
+  prev_measurement_sample_avgs = []
+  curr_measurement_samples = MeasureyM()
   ### YYY: *Hmm*. What would be ideal is a simple Map of AntennaId->List(MeasureyM's)
   ### I think we should go this way, with the following caveat:
   ### The 'Top' Level radiotap measurement will be in AntennaMeasuryMap[0].
   ###Extended Radiotap records will be stored at AnteannaId+1. 
   ### //This accounts for the fact that 'Extended' Antenna rtap headers typically start
   ### with AntennaID 0.
-  
-  
-
-  pkt_measurements_curr = MeasureyM()
-  pkt_measurements_prev = MeasureyM()
-
   
 
   def init(self):
@@ -116,7 +109,7 @@ class MainAppC:
     #header_list=[]
     argslist=[]
     colorlist=[]
-    print("--%2d): #### sniff::callback_main" % (self.State.cnt))
+    #print("--%2d): #### sniff::callback_main" % (self.State.cnt))
     
     if (not pkt.haslayer(RadioTap)):
       print("Error. Wrong DLT (not radiotap). Exiting")
@@ -131,32 +124,27 @@ class MainAppC:
     #  print("Good: %s Marked present" %(k))
 
     ### Convert scapy-native radiotap layer into a more compact 'measurement' record  ###
-    m= MeasureyM()
+    m = MeasureyM()
     m.ProcessExtendedRtap(pkt)
-    print("    (singleton)%s" % (m.Measurey_Map))
-    self.State.pkt_measurements_curr += (m)
-    print("    (Aggregate)%s" % (self.State.pkt_measurements_curr.Measurey_Map))
-    ll = len(self.State.pkt_measurements_curr)
-    print("PRocessed counter count: %d" % (ll))
-    input("")
+    #print("    (singleton)%s" % (m.Measurey_Map))
+    self.State.curr_measurement_samples += (m)
+    #print("    (Aggregate)%s" % (self.State.curr_measurement_samples.Measurey_Map))
+    ll = len(self.State.curr_measurement_samples)
+    #print("PRocessed counter count: %d" % (ll))
+    #input("")
+
     if  ( ll < self.Config.pkts_per_avg):
       return
     else:
-      self.State.avg_pkt_measurements_curr = self.State.pkt_measurements_curr.Average()
-      print(" ### Huzzah: Average:")
-      print("    %s"  % ( self.State.avg_pkt_measurements_curr.Measurey_Map))
-      input("   a  ")
-      sys.exit(0)
-      #self.State.pkt_measurements_prev = self.State.pkt_measurements_curr                 #Store unflattened data
-      #self.State.avg_pkt_measurements_prev = self.State.avg_pkt_measurements_curr         #Store flattened data
-      #self.State.avg_pkt_measurements_curr = Flatten_and_Average_MeasureM_list(self.State.pkt_measurements_curr)      #Compute / Flatten into new average
-      #self.State.pkt_measurements_curr = []                                                #Clear readings
-
-  
-     ########  special case: the first time through the loop 
-    if (self.State.avg_pkt_measurements_prev == None):
-      return
-
+      self.State.prev_measurement_sample_avgs.append (self.State.curr_measurement_samples.Average())
+      self.State.curr_measurement_samples = MeasureyM() # Clear current list
+      if ( len(self.State.prev_measurement_sample_avgs) >= 2):
+        print("#### Most recent averages ####")
+        print("    (P) %s" % (self.State.prev_measurement_sample_avgs[-2].Measurey_Map))
+        print("    (C) %s" % (self.State.prev_measurement_sample_avgs[-1].Measurey_Map))
+       
+    return
+   
     print("##### %s")
     print("    Prev_Avg: (%s) %s " % (self.State.avg_pkt_measurements_prev, self.State.avg_pkt_measurements_prev.Measurey_Map))
     print("    Curr_Avg: (%s) %s " % (self.State.avg_pkt_measurements_curr, self.State.avg_pkt_measurements_curr.Measurey_Map))
