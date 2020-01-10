@@ -6,6 +6,7 @@
 #######
 
 import sys
+import numpy
 sys.path.append("./scapy")
 from scapy.all import *
 from rtap_ext_util import RadiotapTable, Listify_Radiotap_Headers
@@ -81,8 +82,19 @@ class MeasureyM:
       #   self.Measurey_Map[b].append(curr_l)  ## /* list of lists */
     #print("#### Returning MEasureyMap: %s" % (self.Measurey_Map))
     #input(".")
-  def Flatten(self):
-    print("MeasureyM::Flatten()")
+
+  def Flatten_aka_Average(self):
+    print("####MeasureyM::Flatten/Average()")
+    M=MeasureyM() 
+    for b in self._rt_relevant_bits:
+      n=len(self.Measurey_Map[b])
+      #print("    Flattening field:(%d) - (%d) entries" % (b,n))
+      res = [sum(i) for i in zip(*self.Measurey_Map[b])]        #Fancy way to sum lists w/o requiring numpy
+      #print("   intermeidiate res: %s" %(res))
+      M.Measurey_Map[b] =  list(numpy.array(res)/n)             # temporarily convert results into numpy array for convenient list division
+    return(M)
+                                                                # NOTE: In the future we could perform more specific mathematic operations on a per field basis
+                                                                # But for now, simple average is fine. 
     for k in self.Measurey_Map.keys():
       print("    Processing bit:(%d)  num_entries:%d" % (k, len(self.Measurey_Map[k])))
       print("    %s" % (self.Measurey_Map[k]))
@@ -107,30 +119,17 @@ class MeasureyM:
       #input("")
       self.Measurey_Map[b] += im.Measurey_Map[b]
 
-    print("    Merge results here.")
-    print("Result: %s" % (self.Measurey_Map))    ### TODO: Wrap Mergey_Map[1] in an extra list dimension for grouping?
-    input("####  ####")
-    #ret_M = {**self.Measurey_Map, **im.Measurey_Map} #//https://stackoverflow.com/questions/38987/how-do-i-merge-two-dictionaries-in-a-single-expression
-    # JC Start above ^^
-
-    #RetM = MeasureyM()
-   # RetM.Measurey_Map = ret_M
-   # print("###Absormed cross product###")
-   # print(RetM.Measurey_Map)
-   # for b in self._rt_relevant_bits:
-   #   self.Measurey_Map[b] = 
 
 
 def test_measureym_import():
   M1 = MeasureyM()
   M2 = MeasureyM()
-  RetM = MeasureyM()
   
   ##Read in test input
   pktlist=rdpcap(sys.argv[1], count=2)
   print("Two packets read in for test")
-  RTL1=Listify_Radiotap_Headers(pktlist[0])
-  RTL2=Listify_Radiotap_Headers(pktlist[1])
+  #RTL1=Listify_Radiotap_Headers(pktlist[0])
+  #RTL2=Listify_Radiotap_Headers(pktlist[1])
 
   ## Generate aggregated Measuremeny across Extended rtap fields
   M1.ProcessExtendedRtap(pktlist[0])
@@ -148,10 +147,11 @@ def test_measureym_import():
   M3=M1
   M3.Absorb(M2)
 
-  print("### M3 (Merged) : (%s)" % (M3.Measurey_Map))
-  print("#### M3 (Flattened) :")
-  M3.Flatten()
-  print("     %s" % (M3.Measurey_Map))
+  #print("### M3 (Merged) : (%s)" % (M3.Measurey_Map))
+  M4 = M3.Flatten_aka_Average()
+  print("#### M4 (Flattened) (%s) :" %  (M3.Measurey_Map))
+
+  print("     %s" % (M4.Measurey_Map))
 
 def cb_function(pkt):
   global outfname
