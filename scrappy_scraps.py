@@ -1,3 +1,12 @@
+##  RadioTap headers have evolved significantly. Some drivers include per-antenna signal / noise information
+##  Others provide 'overall' signal/noise, but also include exended Antenna fields.
+##
+##  When comparing signal strength, the details of how and where this information is encoded can by significant.
+##
+##
+
+
+
 if ('Lock_Quality' in R.present):
       header_list.append("Lock:%3d")
       argslist.append(str(R.Lock_Quality))
@@ -176,3 +185,6 @@ class Mathy_Stuff_Holder:
     print("    Delta_dBm (%3d, %3d) = %2d" % ( self.State.curr_avg,  self.State.prev_avg, self.Compare_dBm(self.State.curr_avg, self.State.prev_avg)))
     print("    Delta_dBm (%3d, %3d) = %2d " % ( self.State.curr_avg, self.Config.Ref_dBm, self.Compare_dBm(self.State.curr_avg, self.Config.Ref_dBm)))
   ### TODO: Really should make some sort of BeaconMeasurement() class that handles dBm/ SNR / .. conversion and comparison
+
+
+

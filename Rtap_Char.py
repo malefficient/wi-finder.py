@@ -5,12 +5,6 @@
 #
 #######
 
-##  RadioTap headers have evolved significantly. Some drivers include per-antenna signal / noise information
-##  Others provide 'overall' signal/noise, but also include exended Antenna fields.
-##
-##  When comparing signal strength, the details of how and where this information is encoded can by significant.
-##
-##
 import sys
 sys.path.append("./scapy")
 from scapy.all import *
