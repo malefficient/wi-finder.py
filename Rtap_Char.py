@@ -106,8 +106,8 @@ class MeasureyM:
       print("#### MeasuryM::ProcessRtap: Finished")
       print(self.Measurey_Map)
       
-    #if (dirty):
-    #  self.num_processed_rtaps+=1
+    if (dirty):
+      self.num_processed_rtaps+=1
 
 def cb_function(pkt):
   global outfname
