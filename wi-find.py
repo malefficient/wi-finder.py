@@ -22,6 +22,7 @@ def Usage():
 
 class ConfigC:  #Set-once configuration paramters (values do not change during main loop)
   BSSID=None
+  SSID=None
   input_src=None    # 'en0', file.pcap, ...
   sniff_mode=None #  Valid options: 'offline' (pcap file) or 'iface' (self-descr)
   pkts_per_avg=3
@@ -243,7 +244,7 @@ def main():
     print("#### main(): Received initial beacon. Enter to continue")
     pkt1=pkt1[0]
     pkt1.summary()
-    A.Config.SSID=pkt1.info.decode()
+    A.Config.SSID=pkt1.info.decode() 
 
   if A.Config.sniff_mode == "offline":
     sniff(prn=A.callback_main, offline=A.Config.input_src, filter=bpfilter, monitor=1, store=0, count=0)
