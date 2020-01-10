@@ -11,24 +11,6 @@ sys.path.append("./scapy")
 from scapy.all import *
 from rtap_ext_util import RadiotapTable, Listify_Radiotap_Headers
 
-
-### For now, we only handle cases where the type/number of measurements are equivalent
-def Flatten_and_Average_MeasureM_list(L):
-    print("####MeasureyM::Average:")
-    print("#### Averaging a List of length:(%d)" %(len(L)))
-    for l in L:
-      print("    %s" % (l.Measurey_Map))
-    
-    print ("#### Okay dummy. Just for dummy math purposes, returning  last measure for now")
-    ret_m = L[0]
-    ##XXX: JC  Resume here !
-    ## Todo:  YYY 
-    ## * create a MeasureyM.Import(self, right)
-    ## for each relevant_bit b
-    ##   self.Measurey_Map[b] += right.Measurey_Map
-
-    return ret_m
-
 class MeasureyM:
   rtap_table = RadiotapTable()
   _rt_relevant_bits= [2,3,5,6,7]
@@ -37,22 +19,23 @@ class MeasureyM:
   Measurey_Map={}
   
   def __init__(self):  
-    print("####MeasureyM::init")
+    #print("####MeasureyM::init")
     self.Measurey_Map = {}
-    self.num_processed_rtaps=0
-    for b in self._rt_relevant_bits:
-      self.Measurey_Map[b] =  [] #Clear old lists
-      
 
-  
-  
+    for b in self._rt_relevant_bits:
+      self.Measurey_Map[b] =  [] #Clear old listsrf
+      
+  def __len__(self):
+    ret = len(list(self.Measurey_Map.values())[0]) ## ("Ret: %d (len of arbitray value in dict)" % (ret))
+    return ret
+    
   ### Note: ProcessRtap must be passed the original RadioTap layer /with/ the ExtendedPresent bitmask(s) 
   ###       ProcessRtap will call Listify itself; allowing it to preserve the framing information when repeated antenna tags are present
   def ProcessExtendedRtap(self, R):
     rtap_table_helper = RadiotapTable()
     hdr_list = Listify_Radiotap_Headers(R)
-    print("### ProcessRadioTap now down with its own listify")
-    print("#### Listify returned %d headres" % (len(hdr_list)))
+    #print("### ProcessRadioTap now down with its own listify")
+    #print("#### Listify returned %d headres" % (len(hdr_list)))
     idx=0
 
     for b in self._rt_relevant_bits:
@@ -63,62 +46,43 @@ class MeasureyM:
       idx=0
       for r in hdr_list:
         idx+=1
-        #print("     ###ProcessExtRtap: Bit:(%d),  pkt_hdr:(%d)" % (b, idx))
         
         ## Does passed in RadioTap layer have a relevent field?
         v=r.getfieldval(s)
         if (v == None):
           continue
         else:
-          #print("         ProcessExtRtap(%d) Bit(%d)" % (idx, b))
-          #input("")
           curr_l.append(v)
           dirty=True
       #print("    XXX Aggregated %d packets, field: %d" % (idx, b))
       self.Measurey_Map[b].append(curr_l)
-      #input(".")
-      #print(self.Measurey_Map)
-      # if (len(curr_l) > 0):
-      #   self.Measurey_Map[b].append(curr_l)  ## /* list of lists */
-    #print("#### Returning MEasureyMap: %s" % (self.Measurey_Map))
-    #input(".")
 
-  def Flatten_aka_Average(self):
-    print("####MeasureyM::Flatten/Average()")
-    M=MeasureyM() 
+  def Average(self):
+    #print("####MeasureyM::Flatten/Average()")
+    RetM=MeasureyM() 
     for b in self._rt_relevant_bits:
       n=len(self.Measurey_Map[b])
       #print("    Flattening field:(%d) - (%d) entries" % (b,n))
-      res = [sum(i) for i in zip(*self.Measurey_Map[b])]        #Fancy way to sum lists w/o requiring numpy
-      #print("   intermeidiate res: %s" %(res))
-      M.Measurey_Map[b] =  list(numpy.array(res)/n)             # temporarily convert results into numpy array for convenient list division
-    return(M)
-                                                                # NOTE: In the future we could perform more specific mathematic operations on a per field basis
-                                                                # But for now, simple average is fine. 
-    for k in self.Measurey_Map.keys():
-      print("    Processing bit:(%d)  num_entries:%d" % (k, len(self.Measurey_Map[k])))
-      print("    %s" % (self.Measurey_Map[k]))
-      for v in self.Measurey_Map[k]:
-        print("       (%s)   MergeWithMAth()" % (v))
-      print("    ---------------")
+      res = [sum(i) for i in zip(*self.Measurey_Map[b])]        # Fancy way to sum lists w/o requiring numpy
+      RetM.Measurey_Map[b] =  list(numpy.array(res)/n)          # temporarily convert results into numpy array for convenient list division
+    return(RetM)                                                # NOTE: In the future we could perform more specific mathematic operations on a per field basis                                                                        # But for now, simple average is fine. 
+   
+  def __add__(self, im):
+    #print("#### MeasureyM::__add__")
+    RetM = MeasureyM()
 
-  def Absorb(self, im):
-    print("#### MeasureyM::Absorb")
-
-    print("    Self.Measurey_Map: %s" % (self.Measurey_Map))
-    print("    + + + + + ")
-    print("    im.Measurey_Map:   %s"    % (im.Measurey_Map))
-    print("    -----------")
+    # print("    Self.Measurey_Map: %s" % (self.Measurey_Map))
+    # print("    + + + + + ")
+    # print("    im.Measurey_Map:   %s"    % (im.Measurey_Map))
+    # print("    -----------")
 
     for b in self._rt_relevant_bits:
       if (im.Measurey_Map[b] == None):
         print("    MeasureyM.Absorb:: Unexpected error accessing field %d in input" % (b))
         input("X")
         sys.exit(0)
-      #print("   Bit:(%d) Absorb:: processing: type(%s)" % (b, type(im.Measurey_Map[b])))
-      #input("")
-      self.Measurey_Map[b] += im.Measurey_Map[b]
-
+      RetM.Measurey_Map[b] = self.Measurey_Map[b] +  im.Measurey_Map[b]
+    return RetM
 
 
 def test_measureym_import():
@@ -132,26 +96,20 @@ def test_measureym_import():
   #RTL2=Listify_Radiotap_Headers(pktlist[1])
 
   ## Generate aggregated Measuremeny across Extended rtap fields
+  print("####Packet 1 # #####")
   M1.ProcessExtendedRtap(pktlist[0])
-  print("####Packet 1 ######")
   print(M1.Measurey_Map)
-  #input("Packet1 ?")
  
-  M2.ProcessExtendedRtap(pktlist[1])
   print("####Packet 2 ######")
+  M2.ProcessExtendedRtap(pktlist[1])
   print(M2.Measurey_Map)
-  #input("Packet 2?")
-  #sys.exit(0)
-  ## First things first: Attempt 'Importing' (Absorbing?) M1 into empty RetM
-  #M1.Absorb(M2)
-  M3=M1
-  M3.Absorb(M2)
-
-  #print("### M3 (Merged) : (%s)" % (M3.Measurey_Map))
-  M4 = M3.Flatten_aka_Average()
-  print("#### M4 (Flattened) (%s) :" %  (M3.Measurey_Map))
-
-  print("     %s" % (M4.Measurey_Map))
+ 
+  print("##### Packet 3")
+  M3= M1 + M2
+  print("### M3 (M1 + M2) : (%s)" % (M3.Measurey_Map))
+ 
+  M4 = M3.Average()
+  print("#### M4 (M3.Average()) (%s) :" %  (M4.Measurey_Map))
 
 def cb_function(pkt):
   global outfname
@@ -167,10 +125,6 @@ def main():
   test_measureym_import()
   print("main() Exiting.")
   sys.exit(0)
-  #C = RadioTap_Profile_C()
-  sniff(prn=cb_function, offline=sys.argv[1], store=0, count=1)
-  #YYY: JC: For MeasureyM.ImportM(, crea)
-  sys.exit(0)
-
+  
 if __name__=='__main__':
   main()
