@@ -11,6 +11,7 @@ sys.path.append("./scapy")
 from scapy.all import *
 from rtap_ext_util import RadiotapTable, Listify_Radiotap_Headers
 
+
 class MeasureyM:
   rtap_table = RadiotapTable()
   _rt_relevant_bits= [2,3,5,6,7]
@@ -88,28 +89,35 @@ class MeasureyM:
 def test_measureym_import():
   M1 = MeasureyM()
   M2 = MeasureyM()
-  
+  Pretty_P = MeasureyM_PrintShop()
   ##Read in test input
   pktlist=rdpcap(sys.argv[1], count=2)
-  print("Two packets read in for test")
-  #RTL1=Listify_Radiotap_Headers(pktlist[0])
-  #RTL2=Listify_Radiotap_Headers(pktlist[1])
-
-  ## Generate aggregated Measuremeny across Extended rtap fields
-  print("####Packet 1 # #####")
+  
+  #print("####Packet 1 # #####")
   M1.ProcessExtendedRtap(pktlist[0])
-  print(M1.Measurey_Map)
- 
-  print("####Packet 2 ######")
+  
+  #print("####Packet 2 ######")
   M2.ProcessExtendedRtap(pktlist[1])
-  print(M2.Measurey_Map)
- 
-  print("##### Packet 3")
+  
   M3= M1 + M2
+  M3 = M3.Average()
+
+  print("##### Packet 3")
+  Pretty_P.print(M3)
+  return
   print("### M3 (M1 + M2) : (%s)" % (M3.Measurey_Map))
  
   M4 = M3.Average()
   print("#### M4 (M3.Average()) (%s) :" %  (M4.Measurey_Map))
+  Pretty_P.print(M4)
+
+class MeasureyM_PrintShop:
+  colors=0 #//16,256,...
+  def print(self, M):
+    Mmm = M.Measurey_Map   #This just gets to take a lot of column inches
+ 
+    print("## %s ##" % (Mmm))
+    #print("Noise: %d" %(Mmm[6][0][0]))
 
 def cb_function(pkt):
   global outfname
