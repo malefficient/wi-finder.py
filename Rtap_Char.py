@@ -114,10 +114,8 @@ def test_measureym_import():
 class MeasureyM_PrintShop:
   colors=0 #//16,256,...
   def print(self, M):
-    Mmm = M.Measurey_Map   #This just gets to take a lot of column inches
- 
-    print("## %s ##" % (Mmm))
-    #print("Noise: %d" %(Mmm[6][0][0]))
+    #Mmm = M.Measurey_Map   #This just gets to take a lot of column inches
+    print("## %s ##" % (M.Measurey_Map))
 
 def cb_function(pkt):
   global outfname

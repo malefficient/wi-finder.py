@@ -1,49 +1,11 @@
-from Rtap_Char import  MeasureyM, MeasureyM_PrintShop
+from Rtap_Char import  MeasureyM, RadiotapTable
 
 from sys import exit
 
 
 
-def pretty_p(data):
-    dash = '-' * 40
 
-    for i in range(len(data)):
-        if i == 0:
-            print(dash)
-            print('{:<10s}{:>4s}{:>12s}{:>12s}'.format(data[i][0],data[i][1],data[i][2],data[i][3]))
-            print(dash)
-        else:
-            print('{:<10s}{:>4d}{:^12s}{:>12.1f}'.format(data[i][0],data[i][1],data[i][2],data[i][3]))
-
-
-
-
-
-
-
-
-
-
-data=data = [['NAME', 'AGE', 'HANDEDNESS', 'SCORE (%)'],
-        ['Martin', 38, 'L', 54.123],
-        ['Marty', 33, 'L', 32.438],
-        ['Martine', 25, 'R', 71.128],
-        ['Martyn', 59, 'R', 50.472],
-        ['Mart', 23, 'L', 2.438],
-        ['Martyne', 15, 'R', 71.128],
-        ['Marlyn', 101, 'R', 0.472],
-        ['Marti', 2, 'L', 55.438],
-        ['Mardi', 9, 'R', 81.128],
-        ['Martyne', 49, 'R', 24.472],
-        ['Marteen', 91, 'L', 1.128]]
-
-pretty_p(data)
-
-print("\n\n#######Approach numero 2 #######")
-rows = [('apple', '$1.09', '80'), ('trufffffffle', '$58.01', '2')]
-
-Pretty_P = MeasureyM_PrintShop()
-def generate_samples():
+def generate_wifinder_samples():
 
     ## To speed development, sample data already stored in dictionary form
     ### Mac Measurements contain both Signal and Noise
@@ -68,9 +30,46 @@ def generate_samples():
     return Mac_m, Lin_m
 
 
+def ascii_print_example_columns():
+    data = [['NAME', 'AGE', 'HANDEDNESS', 'SCORE (%)'],
+        ['Martin', 38, 'L', 54.123],
+        ['Marty', 33, 'L', 32.438],
+        ['Martyne', 49, 'R', 24.472],
+        ['Marteen', 91, 'L', 1.128]]
+
+    rows = [('apple', '$1.09', '80'), ('truffffle', '$58.01', '2')]
+    dash = '-' * 40
+    lens = []
+ 
+    print("#####Method one: Constant whitespace padding and varied alignment")
+    for i in range(len(data)):
+        if i == 0:
+            print(dash)
+            print('{:<10s}{:>4s}{:>12s}{:>12s}'.format(data[i][0],data[i][1],data[i][2],data[i][3]))
+            print(dash)
+        else:
+            print('{:<10s}{:>4d}{:^12s}{:>12.1f}'.format(data[i][0],data[i][1],data[i][2],data[i][3]))
+   
+    print("###Method tw0: Cleverly generate format string dynamically.")
+    for col in zip(*rows):                         #ZIP: Return a list of tuples, where each tuple contains the i-th element. Exactly what we want!
+        lens.append(max([len(v) for v in col]))
+    #print("lens: %s" % (lens))
+    format = "  ".join(["{:<" + str(l) + "}" for l in lens])
+    for row in rows:
+        print(format.format(*row))
+    
+    
+
+class column_MeasureyM_PrintShop:
+    rtap_table_helper = RadiotapTable()
+    
+    def print(self, M):
+        print("## %s ##" % (M.Measurey_Map))
+
 def main():
+    Pretty_P = column_MeasureyM_PrintShop()
     print("##Mac sample data::")
-    Mac_M,Lin_M=generate_samples()
+    Mac_M,Lin_M=generate_wifinder_samples()
     for m in Mac_M:
         Pretty_P.print(m)
     print("")
@@ -79,15 +78,11 @@ def main():
         Pretty_P.print(m)
     print("")
 
+
     ###
-    lens = []
-    for col in zip(*rows):                         #ZIP: Return a list of tuples, where each tuple contains the i-th element. Exactly what we want!
-        lens.append(max([len(v) for v in col]))
-    print("lens: %s" % (lens))
-    format = "  ".join(["{:<" + str(l) + "}" for l in lens])
-    for row in rows:
-        print(format.format(*row))
+ 
 
 
 if __name__=='__main__':
-  main()
+    main()
+    ascii_print_example_columns()
