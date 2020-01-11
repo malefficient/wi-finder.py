@@ -65,8 +65,42 @@ class column_MeasureyM_PrintShop:
     
     #### TODO: Generate column headings from rtap_helper
     def print(self, M):
-        print("## %s ##" % (M.Measurey_Map))
-
+        header_list={}
+        col_width={}
+        num_entries={}
+        n=0
+        
+        for b in M.Measurey_Map.keys():
+            header_list[b]=(self.rtap_table_helper.bit_to_name_alt(b))
+            num_entries[b]=len(M.Measurey_Map[b])
+            col_width[b]=(len(header_list[b]))
+        print("###%2d)\n%s\n%s\n%s\n" % (b, header_list, num_entries, col_width))
+        n=len(list(header_list.values()))
+        max_col_width = max( list(col_width.values()))+2
+        print("Max col width: %s" %(max_col_width))
+      
+        h_f_t= '|{: ^%d.5}' % (max_col_width)
+        fft  = n * h_f_t
+        formattedList = fft.format(*list(header_list.values())) + "|"
+        print("%s" % (formattedList)) #---Line 1: column headers 
+        
+        blanks_f_t="|{:-^%d}" % (max_col_width) 
+        B=blanks_f_t.format("X")
+        Bb=n*B + "|"
+        print("%s"%(Bb))
+        exit(0)
+        fft_blanks=n * blanks_f_t
+        print("  blanks: (%s)" % (blanks_f_t))
+        print("  blanks: (%s)" % (fft_blanks))
+        print("%s" % (blanks_f_t))
+        print("%s" % (fft_blanks))
+        fft_blanks.format("X")
+        exit(0)
+        blank_fts=len(col_width) * h_f_t
+        print(blank_fts)
+        print("%s" % (blank_fts.format("")))
+        #h1=header_fmt_str.format( list(header_list))
+        #print("%s" % (h1))
 def main():
     Pretty_P = column_MeasureyM_PrintShop()
     print("##Mac sample data::")
@@ -81,4 +115,4 @@ def main():
 
 if __name__=='__main__':
     main()
-    ascii_print_example_columns()
+    #ascii_print_example_columns()

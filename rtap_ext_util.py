@@ -52,7 +52,7 @@ class RadiotapTable():
     return self._rt_present[b]
 
   def bit_to_name_alt(self, b):
-    print("RadioTapTable::bit_to_name_alt(%d): %s" % (b, self._rt_present_alt[b]))
+    #print("RadioTapTable::bit_to_name_alt(%d): %s" % (b, self._rt_present_alt[b]))
     return self._rt_present_alt[b]
 
 
