@@ -78,11 +78,6 @@ def main():
         Pretty_P.print(m)
     print("")
 
-
-    ###
- 
-
-
 if __name__=='__main__':
     main()
     ascii_print_example_columns()
