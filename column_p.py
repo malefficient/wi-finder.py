@@ -63,6 +63,7 @@ def ascii_print_example_columns():
 class column_MeasureyM_PrintShop:
     rtap_table_helper = RadiotapTable()
     
+    #### TODO: Generate column headings from rtap_helper
     def print(self, M):
         print("## %s ##" % (M.Measurey_Map))
 
