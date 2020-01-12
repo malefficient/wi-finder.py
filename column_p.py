@@ -95,8 +95,30 @@ class column_MeasureyM_PrintShop:
         B=blanks_f_t.format("X")
         Bb=num_cols*B + "|"
         print("%s"%(Bb))
-        #exit(0)
         
+        curr_row_values=[]
+        for b in column_order:
+            curr_row_values.append( M.Measurey_Map[b])
+        h_f_t= '{: }' 
+        fft  = num_cols * h_f_t
+        formattedList = fft.format(curr_row_values) + "|"
+        print("%s" % (curr_row_values))
+        print("%s" % (fft))
+#        formattedList = fft.format(*list(curr_row_values)) + "|"
+#        print("%s" % (formattedList)) #---Line 1: column headers 
+
+        exit(0)
+        #### Step 2: Actual data
+        curr_row_values=[]
+        for b in column_order:
+            curr_row_values.append( M.Measurey_Map[b])
+        #h_f_t= '|{: ^%d.5}' % (max_col_width)
+        #fft  = num_cols * h_f_t
+        #print(" %s " % (fft))
+        formattedList = fft.format(*curr_row_values)
+        #print("%s" % (formattedList))
+
+
 def main():
     Pretty_P = column_MeasureyM_PrintShop()
     print("##Mac sample data::")
