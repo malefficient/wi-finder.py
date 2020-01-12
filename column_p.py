@@ -68,50 +68,47 @@ class column_MeasureyM_PrintShop:
         header_list={}
         col_width={}
         num_entries={}
-        n=0
+        num_cols=0
+        column_order=[3,2,7,5,6]
+        #for b in M.Measurey_Map.keys():
+        ##Todo: Iterate over Measurey_Map.keys looking for empty data columns
+        ##      Remove empty fields from column_order
         
-        for b in M.Measurey_Map.keys():
+        ### Step 1: Generate top level table header labels  "#| Chann | Rate  |  Lock  | ...."
+        for b in column_order:
             header_list[b]=(self.rtap_table_helper.bit_to_name_alt(b))
             num_entries[b]=len(M.Measurey_Map[b])
             col_width[b]=(len(header_list[b]))
         print("###%2d)\n%s\n%s\n%s\n" % (b, header_list, num_entries, col_width))
-        n=len(list(header_list.values()))
-        max_col_width = max( list(col_width.values()))+2
+        num_cols=len(list(header_list.values()))
+        max_col_width = max( list(col_width.values()))+2 ##Todo: This needs to consider cases when num_entries[b] > 1
         print("Max col width: %s" %(max_col_width))
       
         h_f_t= '|{: ^%d.5}' % (max_col_width)
-        fft  = n * h_f_t
+        fft  = num_cols * h_f_t
         formattedList = fft.format(*list(header_list.values())) + "|"
         print("%s" % (formattedList)) #---Line 1: column headers 
-        
+        #### End Step 1
+
+        ### Step 1.2: Print pretty column header lines (" |---------|--------|....")
         blanks_f_t="|{:-^%d}" % (max_col_width) 
         B=blanks_f_t.format("X")
-        Bb=n*B + "|"
+        Bb=num_cols*B + "|"
         print("%s"%(Bb))
-        exit(0)
-        fft_blanks=n * blanks_f_t
-        print("  blanks: (%s)" % (blanks_f_t))
-        print("  blanks: (%s)" % (fft_blanks))
-        print("%s" % (blanks_f_t))
-        print("%s" % (fft_blanks))
-        fft_blanks.format("X")
-        exit(0)
-        blank_fts=len(col_width) * h_f_t
-        print(blank_fts)
-        print("%s" % (blank_fts.format("")))
-        #h1=header_fmt_str.format( list(header_list))
-        #print("%s" % (h1))
+        #exit(0)
+        
 def main():
     Pretty_P = column_MeasureyM_PrintShop()
     print("##Mac sample data::")
     Mac_M,Lin_M=generate_wifinder_samples()
+    print("%s" % (Mac_M[0].Measurey_Map))
     for m in Mac_M:
         Pretty_P.print(m)
-    print("")
-    print("##Linux sample data::")
-    for m in Lin_M:
-        Pretty_P.print(m)
-    print("")
+    #print("")
+    #print("##Linux sample data::")
+    #for m in Lin_M:
+    #    Pretty_P.print(m)
+    #print("")
 
 if __name__=='__main__':
     main()
