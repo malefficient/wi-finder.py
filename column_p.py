@@ -94,20 +94,40 @@ class column_MeasureyM_PrintShop:
         blanks_f_t="|{:-^%d}" % (max_col_width) 
         B=blanks_f_t.format("X")
         Bb=num_cols*B + "|"
-        print("%s"%(Bb))
+        ##print("  blanks_f_t:(%s)   B:(%s)   Bb:(%s)"% (blanks_f_t,B, Bb))
         
+
+        ##
+        ##  Mehr mehr mehr. In no particular order:
+        ##  A) 'Flatten' the Signal Header by replacing it with len(Measurey_Map[5] Sig.0, Sig,1, Sig,2 ...)
+        ##     Treat lists of length one as special case: Don't Append number, but to pull out of list
         curr_row_values=[]
         for b in column_order:
-            curr_row_values.append( M.Measurey_Map[b])
-        h_f_t= '{: }' 
-        fft  = num_cols * h_f_t
-        formattedList = fft.format(curr_row_values) + "|"
-        print("%s" % (curr_row_values))
-        print("%s" % (fft))
-#        formattedList = fft.format(*list(curr_row_values)) + "|"
-#        print("%s" % (formattedList)) #---Line 1: column headers 
+            curr_row_values.append(M.Measurey_Map[b])
+        for c in curr_row_values:
+            print("####  type:(%s)  len:(%s)  %s" % ( type(c), len(c), c))
 
-        exit(0)
+        ##h_f_t= '|{}' 
+        h_f_t='|{:-^9}'
+        fft  = num_cols * h_f_t
+        
+        ##print("  h_f_t:( %s )  fft:( %s ) " % (h_f_t, fft))
+        ##print("  %s  " % (curr_row_values))
+        formattedList = fft.format(*list(curr_row_values))
+        print("%s" % (formattedList)) #---Line 1: column headers 
+
+        print("#### curr_row_data: %s ###" % (curr_row_values))
+        return
+        # Justification (left, centered, right)
+        #      |
+        # '{1:_^8.5}'.format('xylophone', 'mimikatz')
+        #   | | | |___truncate to five    
+        #   | | |__Pad to 8 characters (At least 3 padding characters, 8-5)
+        #   | |__Padding char
+        #   | 
+        #   |_argument
+        #   #
+        #exit(0)
         #### Step 2: Actual data
         curr_row_values=[]
         for b in column_order:
@@ -121,15 +141,15 @@ class column_MeasureyM_PrintShop:
 
 def main():
     Pretty_P = column_MeasureyM_PrintShop()
-    print("##Mac sample data::")
+    # print("##Mac sample data::")
     Mac_M,Lin_M=generate_wifinder_samples()
-    print("%s" % (Mac_M[0].Measurey_Map))
-    for m in Mac_M:
+    # print("%s" % (Mac_M[0].Measurey_Map))
+    # for m in Mac_M:
+    #     Pretty_P.print(m)
+    # #print("")
+    print("##Linux sample data::")
+    for m in Lin_M:
         Pretty_P.print(m)
-    #print("")
-    #print("##Linux sample data::")
-    #for m in Lin_M:
-    #    Pretty_P.print(m)
     #print("")
 
 if __name__=='__main__':
