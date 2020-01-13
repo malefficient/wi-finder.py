@@ -11,7 +11,7 @@ from scapy.all import *
 
 from rtap_ext_util import Listify_Radiotap_Headers
 from ext_beacon_util import return_IE_by_tag, TargetCharacteristics
-from Rtap_Char import  MeasureyM
+from Rtap_Char import  MeasureyM, MeasureyM_PrintShop
 
 from colorama import Fore, Back, Style
 
@@ -85,6 +85,7 @@ class StateC:  #All dynamic state associated with instance
   cnt=0
   prev_measurement_sample_avgs = []
   curr_measurement_samples = MeasureyM()
+  Pretty_Printer = MeasureyM_PrintShop()
   ### YYY: *Hmm*. What would be ideal is a simple Map of AntennaId->List(MeasureyM's)
   ### I think we should go this way, with the following caveat:
   ### The 'Top' Level radiotap measurement will be in AntennaMeasuryMap[0].
@@ -140,16 +141,10 @@ class MainAppC:
       self.State.curr_measurement_samples = MeasureyM() # Clear current list
       if ( len(self.State.prev_measurement_sample_avgs) >= 2):
         print("#### Most recent averages ####")
-        print("    (P) %s" % (self.State.prev_measurement_sample_avgs[-2].Measurey_Map))
-        print("    (C) %s" % (self.State.prev_measurement_sample_avgs[-1].Measurey_Map))
-       
+        #print("    (P) %s" % (self.State.prev_measurement_sample_avgs[-2].Measurey_Map))
+        #print("    (C) %s" % (self.State.prev_measurement_sample_avgs[-1].Measurey_Map))
+        self.State.Pretty_Printer.print(self.State.prev_measurement_sample_avgs[-1])
     return
-   
-    print("##### %s")
-    print("    Prev_Avg: (%s) %s " % (self.State.avg_pkt_measurements_prev, self.State.avg_pkt_measurements_prev.Measurey_Map))
-    print("    Curr_Avg: (%s) %s " % (self.State.avg_pkt_measurements_curr, self.State.avg_pkt_measurements_curr.Measurey_Map))
-    input("How do those compare?Good?")
-
     #sys.exit(0)
     ########
     #print("Returning early!")
