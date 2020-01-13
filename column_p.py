@@ -59,6 +59,59 @@ def ascii_print_example_columns():
         print(format.format(*row))
     
     
+class MeasureyM_text_Renderer:
+    initialized=False
+    rtap_table_helper = RadiotapTable()
+    header_list={}
+    col_width={}
+    num_entries={}
+    num_cols=0
+    column_order=[3,2,7,5,6]
+
+    flat_column_headings = []
+    def init(self, M):
+        self.header_list.clear()
+        self.col_width.clear()
+        self.num_entries.clear()
+        self.flat_column_headings.clear()
+        self.num_cols=0
+
+        print("###MeasureyM_text_Renderer::Init()")
+        self.initialized = True
+        # Init should be passwd a MeasureyM that resembles those it is expected to later process and output.
+        # We perform as much one-time-only formatting work here, so that print() can be relatively fast.
+
+        ## First up. Iterate all of the fields we want to display. If a field contains multiple values (I.e., Signal reading from N antennas)
+        ## Break the 'top' level header up into N numbered values (Signal -> Sig.0, Sig.1, Sig.2, ..)
+
+        for b in self.column_order:
+            self.num_entries[b]=len(M.Measurey_Map[b])
+        print("    MeasureyM_Renderer::Init. Num entries map:\n    %s" % (self.num_entries))
+        for b in self.column_order:
+            curr_h = self.rtap_table_helper.bit_to_name_alt(b)
+            if self.num_entries[b] == 0:
+                print("    Warning: Unexpected case. 0 data entries for field:(%d) (%s)" % (b,  curr_h))
+                input("Q")
+            elif self.num_entries[b] == 1:
+                self.flat_column_headings.append(curr_h)
+            elif self.num_entries[b] > 1:
+                print ("   XX Tricky case. Need to break b:(%d) (%s) in %d cols" % (b,curr_h, self.num_entries[b]))
+                for idx in range(0, self.num_entries[b]):
+                    c_h = '{:.3}.{:d}'.format(curr_h,idx)
+                    self.flat_column_headings.append(c_h)
+                    print("    %s" % (c_h))
+            #
+                # self.flat_column_headings.append(h)
+        self.num_flat_headings = len(self.flat_column_headings)
+        print("   Generated %d Flattened headings: %s" % ( self.num_flat_headings, self.flat_column_headings))
+       
+    def print(self, M):
+        if (self.initialized == False):
+            print(" Error. Measurey_M::Print  called before init() ")
+            exit()
+        print("###MeasureyM_text_Renderer::Print()")
+        print("    Passed: %s" % (M.Measurey_Map))
+        input("")
 
 class column_MeasureyM_PrintShop:
     rtap_table_helper = RadiotapTable()
@@ -140,16 +193,21 @@ class column_MeasureyM_PrintShop:
 
 
 def main():
-    Pretty_P = column_MeasureyM_PrintShop()
-    # print("##Mac sample data::")
+    Pretty_P = MeasureyM_text_Renderer()
     Mac_M,Lin_M=generate_wifinder_samples()
-    # print("%s" % (Mac_M[0].Measurey_Map))
+    
+    ### Mac Data ###
+    Pretty_P.init(Mac_M[0])
+    Pretty_P.print(Mac_M[1])
     # for m in Mac_M:
     #     Pretty_P.print(m)
-    # #print("")
-    print("##Linux sample data::")
-    for m in Lin_M:
-        Pretty_P.print(m)
+    # sys.exit(0)
+    ### Linux data ###
+    Pretty_P.init(Lin_M[0])
+    Pretty_P.print(Lin_M[1])
+
+    # for m in Lin_M:
+    #     Pretty_P.print(m)
     #print("")
 
 if __name__=='__main__':
