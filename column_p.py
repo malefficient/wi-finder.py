@@ -74,7 +74,13 @@ def ascii_print_example_columns():
     for row in rows:
         print(format.format(*row))
     
-    
+
+
+def get_color():
+    a,b,c=random.randint(0,255),random.randint(0,255),random.randint(0,255)
+    cc = fg(a, b, c)
+    return cc
+
 class MeasureyM_text_Renderer:
     initialized=False
     rtap_table_helper = RadiotapTable()
@@ -99,7 +105,8 @@ class MeasureyM_text_Renderer:
         self.left_margin="        "
         print("###MeasureyM_text_Renderer::Init()")
         self.initialized = True
-        # Init should be passwd a MeasureyM that resembles those it is expected to later process and output.
+        input("III")
+        # Init should be passed a MeasureyM that resembles those it is expected to later process and output.
         # We perform as much one-time-only formatting work here, so that print() can be relatively fast.
         # Code within the init function is optimized for clarity over performance. 
 
@@ -108,7 +115,7 @@ class MeasureyM_text_Renderer:
 
         for b in self.column_order:
             self.num_entries[b]=len(M.Measurey_Map[b])
-        #print("    MeasureyM_Renderer::Init. Num entries map:\n    %s" % (self.num_entries))
+
         for b in self.column_order:
             curr_h = self.rtap_table_helper.bit_to_name_alt(b)
             if self.num_entries[b] == 0:
@@ -118,7 +125,7 @@ class MeasureyM_text_Renderer:
             elif self.num_entries[b] == 1:                   ###TODO merge these seperate elif's into a single range() loop. Less code duplication
                 self.flat_column_headings.append(curr_h)
                 self.flat_column_widths.append(10)
-                self.flat_column_fmt_strs += ("|{:^10.8}")
+                self.flat_column_fmt_strs += (rs.all +"|" + "{}" + "{:^10.8}")
             elif self.num_entries[b] > 1:
                 #print ("   XX Tricky case. Need to break b:(%d) (%s) in %d cols" % (b,curr_h, self.num_entries[b]))
                 for idx in range(0, self.num_entries[b]):
@@ -126,9 +133,12 @@ class MeasureyM_text_Renderer:
                     self.flat_column_headings.append(c_h)
                     #print("    %s" % (c_h))
                     self.flat_column_widths.append(10)        #TODO: Compute this dynamically later
-                    self.flat_column_fmt_strs += ("|{:^10.8}")   #TODO: Also this.
+                    self.flat_column_fmt_strs += (rs.all + "|" + "{}" + "{:^10.8}" + rs.all)   #TODO: Also this.
+
         self.num_flat_headings = len(self.flat_column_headings)
-        #print("   Generated %d Flattened headings: %s" % ( self.num_flat_headings, self.flat_column_headings))
+        print("   Pretty_P::Init Generated %d Flattened headings: %s" % ( self.num_flat_headings, self.flat_column_headings))
+        print("   Pretty_P::Init from %s %s" % (M, M.Measurey_Map))
+        input("XCBA")
 
 
     def ret_header(self):
@@ -142,17 +152,16 @@ class MeasureyM_text_Renderer:
             print("    Measurey_M_Renderer::Header TODO: Echo 'Normal' escape character to terminal")    
         for i in range(0,  len(self.flat_column_headings)):
             cell_w = self.flat_column_widths[i]
-            curr_c_fmt_s= "|{: ^%d.%d}" % (cell_w, cell_w-2)   ##TODO: fill in '8' dynamically
-            curr_c_spacer_s="|{:-^%d}" % (cell_w)
-            blanks_f_t="|{:-^%d}" % (cell_w) 
+            curr_c_fmt_s= rs.all +  "|" +  fg.white + "{: ^%d.%d}" % (cell_w, cell_w-2)   ##TODO: fill in '8' dynamically
+            blanks_f_t=rs.all + "|" + "{:-^%d}" % (cell_w) 
             spacer_str += blanks_f_t.format("-")
             header_fmtstr_complete += curr_c_fmt_s
         #print("    ### Header column format string: (%s) " % (header_fmtstr_complete))
         #print("    ### Head column flat headers   : (%s) " % (self.flat_column_headings))
         
-        ret =   self.left_margin + spacer_str + "|\n" +\
-                self.left_margin + header_fmtstr_complete.format(*self.flat_column_headings) + "|\n" +\
-                self.left_margin + spacer_str + "|"
+        ret =   rs.all + self.left_margin + spacer_str + "|\n" +\
+                rs.all + self.left_margin + header_fmtstr_complete.format(*self.flat_column_headings) +  rs.all + "|\n" +\
+                rs.all + self.left_margin + spacer_str + "|"
         #print("%s" % (ret))
         #input("Kk")
         return ret
@@ -160,19 +169,29 @@ class MeasureyM_text_Renderer:
         if (self.initialized == False):
             print(" Error. Measurey_M::Print  called before init() ")
             exit()
-        #print("###MeasureyM_text_Renderer::Print()")
-        #print("    Passed: %s" % (M.Measurey_Map))
        
-        #need_header=True
-        #if (need_header):
-        #    print("%s" % self.ret_header(M))
-
+      
         ### TODO: Flatten the arguments in M
-        #print("%s" % (M.Measurey_Map))
-        f_l = reduce(lambda x,y: x+y, list(M.Measurey_Map.values()))
-        #print(" ### reduce result: %s" % (f_l))
-        #print(" ### row fmt string: %s" % (self.flat_column_fmt_strs))
-        out = self.left_margin + self.flat_column_fmt_strs.format(*f_l) +"|"
+        print("%s" % (M.Measurey_Map))
+        values_l = reduce(lambda x,y: x+y, list(M.Measurey_Map.values()))  # Flatten measurey_map
+        print("#### len(values_l):(%d)  values_l:(%s) <--should be flattened M.map" %  (len(values_l), values_l))
+        print("#### len(flat_column_headings):(%d),   (%s)" % (len(self.flat_column_headings), self.flat_column_headings))
+        if len(values_l) != len(self.flat_column_headings):
+            print("#### Warning: print() passed Measurey_M with %d entries. Expected %d" % (len(values_l), len(self.flat_column_headings)))
+
+        colors_l = []
+        for idx in range(0, len(self.flat_column_headings)):
+            colors_l.append ( get_color())
+        
+
+        ### colors for a given value (colors_l, values_l) 
+        ### Interleave the color codes and corresponding values in a single list.
+        colorized_data = list(chain.from_iterable(zip(colors_l, values_l))) #Interleave computed colors with actual row contents
+        #row_string=pffft.format(*colorized_data)
+        #print("%s" % (row_string))
+   
+        out = self.left_margin + self.flat_column_fmt_strs.format(*colorized_data) + rs.all + "|"
+
         print(out)
 
 def basic_tst(M):
@@ -198,8 +217,9 @@ def main():
     Pretty_P = MeasureyM_text_Renderer()
     Mac_M,Lin_M=generate_wifinder_samples()
 
-    basic_tst(Mac_M[0])
-    exit(0)    
+    #basic_tst(Mac_M[0])
+    #
+    # clexit(0)    
     ### Mac Data ###
     Pretty_P.init(Mac_M[0])
     print( Pretty_P.ret_header())

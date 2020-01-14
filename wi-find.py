@@ -13,7 +13,8 @@ from rtap_ext_util import Listify_Radiotap_Headers
 from ext_beacon_util import return_IE_by_tag, TargetCharacteristics
 from Rtap_Char import  MeasureyM, MeasureyM_PrintShop
 
-from colorama import Fore, Back, Style
+#from colorama import Fore, Back, Style
+from column_p import MeasureyM_text_Renderer, get_color
 
 def Usage():
   print("Usage: %s -b <BSSID> -i <input>" % (sys.argv[0]))
@@ -85,7 +86,7 @@ class StateC:  #All dynamic state associated with instance
   cnt=0
   prev_measurement_sample_avgs = []
   curr_measurement_samples = MeasureyM()
-  Pretty_Printer = MeasureyM_PrintShop()
+  Pretty_Printer = MeasureyM_text_Renderer()
   ### YYY: *Hmm*. What would be ideal is a simple Map of AntennaId->List(MeasureyM's)
   ### I think we should go this way, with the following caveat:
   ### The 'Top' Level radiotap measurement will be in AntennaMeasuryMap[0].
@@ -94,16 +95,19 @@ class StateC:  #All dynamic state associated with instance
   ### with AntennaID 0.
   
 
-  def init(self):
-    print("#### StateC::ctor::Start")
-    input("Continue:")
-
+  def init(self, pkt):
+    print("#### StateC::init") # forward StateC::init packet down to config as a MeasureyM")
+    m = MeasureyM()
+    m.ProcessExtendedRtap(pkt)
+    self.Pretty_Printer.init(m)  
 class MainAppC:
 
   State = StateC()
   Config = ConfigC()
   Target = TargetCharacteristics()
   
+  #def __init__(self):
+  #  self.State.init()
 
   def callback_main(self, pkt):
     self.State.cnt+=1
@@ -119,20 +123,13 @@ class MainAppC:
     R=pkt[RadioTap]
     R=RadioTap(raw(R)[:R.len]) ## Trim  Radiotap down to only itself
   
-    #reqd_rtap_pres = ['Rate', 'Channel', 'dBm_AntSignal'] #List of minimum set of viable radiotap fields to be useful
-    #print("    Present: 0x%08x: " % int(R.present))
-    #for k in reqd_rtap_pres:
-    #  print("Good: %s Marked present" %(k))
-
+    
     ### Convert scapy-native radiotap layer into a more compact 'measurement' record  ###
     m = MeasureyM()
     m.ProcessExtendedRtap(pkt)
-    #print("    (singleton)%s" % (m.Measurey_Map))
+    self.State.Pretty_Printer.init(m) ### XXX: Don't do this in the main loop.
     self.State.curr_measurement_samples += (m)
-    #print("    (Aggregate)%s" % (self.State.curr_measurement_samples.Measurey_Map))
     ll = len(self.State.curr_measurement_samples)
-    #print("PRocessed counter count: %d" % (ll))
-    #input("")
 
     if  ( ll < self.Config.pkts_per_avg):
       return
@@ -143,6 +140,7 @@ class MainAppC:
         print("#### Most recent averages ####")
         #print("    (P) %s" % (self.State.prev_measurement_sample_avgs[-2].Measurey_Map))
         #print("    (C) %s" % (self.State.prev_measurement_sample_avgs[-1].Measurey_Map))
+        print("%s" % (self.State.Pretty_Printer.ret_header()))
         self.State.Pretty_Printer.print(self.State.prev_measurement_sample_avgs[-1])
     return
     #sys.exit(0)
@@ -222,7 +220,7 @@ def main():
     pkt1=pkt1[0]
     pkt1.summary()
     A.Config.SSID=pkt1.info.decode() 
-
+    A.State.init(pkt1)
   if A.Config.sniff_mode == "offline":
     sniff(prn=A.callback_main, offline=A.Config.input_src, filter=bpfilter, monitor=1, store=0, count=0)
   else:
