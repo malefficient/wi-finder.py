@@ -4,7 +4,7 @@ from sys import exit
 import random
 from sty import Style, RgbFg, fg, bg, ef, rs  #(Foreground, BackGround, Effects, Reset)
 from functools import reduce
-
+from itertools import chain
 
 
 
@@ -169,20 +169,23 @@ def basic_tst(M):
     value_list=[12, 2412, -68, -97]
     colors_list=[]
     num_cols=len(value_list)
-
+    start_cell=rs.all + "|"
     for idx in range (0, num_cols):
-        c=random.randint(0,255)
-        d=random.randint(0,255)
-        e=random.randint(0,255)
+        c,d,e=random.randint(0,255),random.randint(0,255),random.randint(0,255)
         cc = fg(c, d, e)
-        print(" Rando color: %dm Rando colorcode: %s " %(c, cc))
+        colors_list.append(cc)
 
+    cell_data_fmtstr=("{: ^%d}%s" % (cell_w, rs.all)) #
 
-    v_fmtstr=num_cols *  ("|{: ^%d}" % (cell_w))
-    print("v_fmtstr:(%s)" % (v_fmtstr))
-    print(" Colors_list: %s" % (colors_list))
-    ret = v_fmtstr.format(*value_list)  
-    print("  Ret:  %s" %(ret))
+    fft = num_cols * [rs.all + "|" + "{}" + cell_data_fmtstr]  #Generate format string, stored in list form
+    fft.append("%s|" % (rs.all)) #Append final "| in row"
+    fft = str().join(fft)        #finalize format string into a str() from easier to manipulate list
+    
+    colorized_data = list(chain.from_iterable(zip(colors_list, value_list))) #Interleave computed colors with actual row contents
+    
+    row_string=fft.format(*colorized_data)
+    print("%s" % (row_string))
+    return row_string
 def main():
     Pretty_P = MeasureyM_text_Renderer()
     Mac_M,Lin_M=generate_wifinder_samples()
