@@ -175,15 +175,10 @@ def basic_tst(M):
         cc = fg(c, d, e)
         colors_list.append(cc)
 
-    cell_data_fmtstr=("{: ^%d}%s" % (cell_w, rs.all)) #
-
-    fft = num_cols * [rs.all + "|" + "{}" + cell_data_fmtstr]  #Generate format string, stored in list form
-    fft.append("%s|" % (rs.all)) #Append final "| in row"
-    fft = str().join(fft)        #finalize format string into a str() from easier to manipulate list
-    
+    cell_data_fmtstr=str(rs.all + "|" + '{}' +  "{: ^%d}"%(cell_w)  + rs.all)
+    pffft = num_cols * cell_data_fmtstr
     colorized_data = list(chain.from_iterable(zip(colors_list, value_list))) #Interleave computed colors with actual row contents
-    
-    row_string=fft.format(*colorized_data)
+    row_string=pffft.format(*colorized_data)
     print("%s" % (row_string))
     return row_string
 def main():
