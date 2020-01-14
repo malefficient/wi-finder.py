@@ -1,6 +1,8 @@
 from Rtap_Char import  MeasureyM, RadiotapTable
 
 from sys import exit
+import random
+from sty import Style, RgbFg, fg, bg, ef, rs  #(Foreground, BackGround, Effects, Reset)
 from functools import reduce
 
 
@@ -100,7 +102,7 @@ class MeasureyM_text_Renderer:
                 print("    Warning: Unexpected case. 0 data entries for field:(%d) (%s)" % (b,  curr_h))
                 input("Q")
 
-            elif self.num_entries[b] == 1:
+            elif self.num_entries[b] == 1:                   ###TODO merge these seperate elif's into a single range() loop. Less code duplication
                 self.flat_column_headings.append(curr_h)
                 self.flat_column_widths.append(10)
                 self.flat_column_fmt_strs += ("|{:^10.8}")
@@ -160,11 +162,33 @@ class MeasureyM_text_Renderer:
         out = self.left_margin + self.flat_column_fmt_strs.format(*f_l) +"|"
         print(out)
 
+def basic_tst(M):
+    print("#### Basic_tst::start Generate some parallel colormaps")
+    cell_w=10
 
+    value_list=[12, 2412, -68, -97]
+    colors_list=[]
+    num_cols=len(value_list)
+
+    for idx in range (0, num_cols):
+        c=random.randint(0,255)
+        d=random.randint(0,255)
+        e=random.randint(0,255)
+        cc = fg(c, d, e)
+        print(" Rando color: %dm Rando colorcode: %s " %(c, cc))
+
+
+    v_fmtstr=num_cols *  ("|{: ^%d}" % (cell_w))
+    print("v_fmtstr:(%s)" % (v_fmtstr))
+    print(" Colors_list: %s" % (colors_list))
+    ret = v_fmtstr.format(*value_list)  
+    print("  Ret:  %s" %(ret))
 def main():
     Pretty_P = MeasureyM_text_Renderer()
     Mac_M,Lin_M=generate_wifinder_samples()
-    
+
+    basic_tst(Mac_M[0])
+    exit(0)    
     ### Mac Data ###
     Pretty_P.init(Mac_M[0])
     print( Pretty_P.ret_header())
