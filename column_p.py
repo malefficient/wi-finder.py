@@ -6,6 +6,19 @@ from sty import Style, RgbFg, fg, bg, ef, rs  #(Foreground, BackGround, Effects,
 from functools import reduce
 from itertools import chain
 
+### COlorscheme notes:
+## Virdis (bokeh) purple->yellow
+## Spectral (bokeh) red->yellow->purple
+### Bokeh:  CategoricalColorMapper : https://docs.bokeh.org/en/latest/docs/user_guide/categorical.html#userguide-categorical
+### source = ColumnDataSource(data=dict(fruits=fruits, counts=counts, color=Spectral6))
+### factor_cmap('fruits', palette=Spectral6, factors=fruits)
+### TODO: Should I pick a static coor map (or two), do the math to normalize dB myself, and just use offset?
+####      Or, would it be better to let brokeh dynamically generate one based on the range itself?
+
+#Additionally, you can also use any of the 256-color perceptually uniform Bokeh palettes from the external colorcet package, if it is installed.
+#In the context of Bokeh, a palette is a simple plain Python list of (hex) RGB color strings. For example the Blues8 palette which looks like 
+#['#084594', '#2171b5', '#4292c6', '#6baed6', '#9ecae1', '#c6dbef', '#deebf7', '#f7fbff']
+
 
 
 def generate_wifinder_samples():
