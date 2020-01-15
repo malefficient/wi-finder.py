@@ -6,6 +6,7 @@
 # Copyright (C) 2019 Johnny Cache <johnycsh@gmail.com>
 #
 
+
 import sys, getopt, re, copy
 from scapy.all import *
 
@@ -27,7 +28,7 @@ class ConfigC:  #Set-once configuration paramters (values do not change during m
   input_src=None    # 'en0', file.pcap, ...
   sniff_mode=None #  Valid options: 'offline' (pcap file) or 'iface' (self-descr)
   pkts_per_avg=5
-  
+  averages_per_header_print=10
   def Parse_Args(self):
       print("#### Parse_Args: Start")
       opts = getopt.getopt(sys.argv[1:],"b:i:h")
@@ -94,7 +95,6 @@ class StateC:  #All dynamic state associated with instance
   ### //This accounts for the fact that 'Extended' Antenna rtap headers typically start
   ### with AntennaID 0.
   
-
   def init(self, pkt):
     print("#### StateC::init") # forward StateC::init packet down to config as a MeasureyM")
     m = MeasureyM()
@@ -123,31 +123,32 @@ class MainAppC:
     R=pkt[RadioTap]
     R=RadioTap(raw(R)[:R.len]) ## Trim  Radiotap down to only itself
   
-    
     ### Convert scapy-native radiotap layer into a more compact 'measurement' record  ###
     m = MeasureyM()
     m.ProcessExtendedRtap(pkt)
-    self.State.Pretty_Printer.init(m) ### XXX: Don't do this in the main loop.
+    
     self.State.curr_measurement_samples += (m)
     ll = len(self.State.curr_measurement_samples)
 
     if  ( ll < self.Config.pkts_per_avg):
       return
     else:
+      
       self.State.prev_measurement_sample_avgs.append (self.State.curr_measurement_samples.Average())
       self.State.curr_measurement_samples = MeasureyM() # Clear current list
-      if ( len(self.State.prev_measurement_sample_avgs) >= 2):
-        print("#### Most recent averages ####")
+      #if (self.State.cnt == 1 or self.State.cnt % 50 == 0):
+      #  print("%s" % (self.State.Pretty_Printer.ret_header()))
+      if (len(self.State.prev_measurement_sample_avgs) >= 2):
+        #print("#### Most recent averages ####")
         #print("    (P) %s" % (self.State.prev_measurement_sample_avgs[-2].Measurey_Map))
         #print("    (C) %s" % (self.State.prev_measurement_sample_avgs[-1].Measurey_Map))
-        print("%s" % (self.State.Pretty_Printer.ret_header()))
+        #print("%s" % (self.State.Pretty_Printer.ret_header()))
+        if (self.State.Pretty_Printer.cnt % 10 == 0):
+          print("%s" % (self.State.Pretty_Printer.ret_header()))
         self.State.Pretty_Printer.print(self.State.prev_measurement_sample_avgs[-1])
+        
     return
-    #sys.exit(0)
-    ########
-    #print("Returning early!")
-    return 
-
+    
     if (len(self.State.curr_sigdBms) < self.Config.pkts_per_avg):
       self.State.curr_sigdBms.append(R.dBm_AntSignal)
       #self.State.curr_noisedBms.append(R.dBm_AntNoise)
@@ -198,19 +199,35 @@ def ParseTargetBeacon(pkt):
 def main():
   ## Misc platform setup: On Macos we need to explicitly enable libpcap for BPF to work correctly
 
-  #conf.use_pcap = True #XXX This needs to be true on Macos, false on linux 
+  conf.use_pcap = False # XXX This needs to be true on Macos, false on linux 
   #YYY: TODO wrap sniff() calls in conf.use_pcap cases
+  retry_pkt1_sniff = False
 
   A = MainAppC()
   A.Config.Parse_Args()
-
   bpfilter="type mgt and subtype beacon and wlan host %s " % ( A.Config.BSSID)
+  
   ### Before we can get to the main loop, we need to catch atleast 1 beacon (so we know how many measurements are present etc)
-  if A.Config.sniff_mode == "offline":
-    pkt1=sniff(prn=ParseTargetBeacon, offline=A.Config.input_src, filter=bpfilter, monitor=1, store=1, count=1)
+  try:
+    if A.Config.sniff_mode == "offline":
+      pkt1=sniff(prn=ParseTargetBeacon, offline=A.Config.input_src, filter=bpfilter, monitor=1, store=1, count=1)
+    else:
+      pkt1=sniff(prn=ParseTargetBeacon, iface=A.Config.input_src, filter=bpfilter, monitor=1, store=1, count=1)
+  except: 
+    retry_pkt1_sniff = True
+    conf.use_pcap=True
 
-  else:
-    pkt1=sniff(prn=ParseTargetBeacon, iface=A.Config.input_src, filter=bpfilter, monitor=1, store=1, count=1)
+  if (retry_pkt1_sniff):
+    print ("detected exception calling scapy.sniff. Retrying with conf.use_pcap")
+    try:
+      if A.Config.sniff_mode == "offline":
+        pkt1=sniff(prn=ParseTargetBeacon, offline=A.Config.input_src, filter=bpfilter, monitor=1, store=1, count=1)
+      else:
+        pkt1=sniff(prn=ParseTargetBeacon, iface=A.Config.input_src, filter=bpfilter, monitor=1, store=1, count=1)
+    except: 
+      print ("Unrecoverable exception in scapy .sniff Exiting")
+      sys.exit(1)
+ 
 
   if (len(pkt1) < 1):
     print("#### main(): Error. No Beacon received for BSSID: %s" % (A.Config.BSSID))
