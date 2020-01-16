@@ -96,7 +96,7 @@ class StateC:  #All dynamic state associated with instance
   ### with AntennaID 0.
   
   def init(self, pkt):
-    print("#### StateC::init") # forward StateC::init packet down to config as a MeasureyM")
+    #print("#### StateC::init") # forward StateC::init packet down to config as a MeasureyM")
     m = MeasureyM()
     m.ProcessExtendedRtap(pkt)
     self.Pretty_Printer.init(m)  
@@ -194,7 +194,7 @@ def ParseTargetBeacon(pkt):
   T = TargetCharacteristics()
   T.init(pkt)
   print("-----  Target Summary above ----")
-  input("")
+  #input("")
   
 def main():
   ## Misc platform setup: On Macos we need to explicitly enable libpcap for BPF to work correctly
@@ -233,7 +233,7 @@ def main():
     print("#### main(): Error. No Beacon received for BSSID: %s" % (A.Config.BSSID))
     exit(0)
   else:
-    print("#### main(): Received initial beacon. Enter to continue")
+    input(sys.argv[0] + ": Target verified. Enter to continue.")
     pkt1=pkt1[0]
     pkt1.summary()
     A.Config.SSID=pkt1.info.decode() 
