@@ -1,6 +1,7 @@
 import math
 import sys
 import sty
+import random
 
 class ColorClass():
     """Class that can convert between different color formats.
@@ -182,16 +183,16 @@ def compute_signal_color(mag, m_max, m_min):
 def ArrRSSI_to_dBm(arrRSSI):
     
     if (arrRSSI < 0.000001) and (arrRSSI > -0.000001): #Special case: 0
-        print("#### ArrRSSI_to_dBm:(%d)~~(0)   = (1) (special case)" % (arrRSSI))
+        #print("#### ArrRSSI_to_dBm:(%d)~~(0)   = (1) (special case)" % (arrRSSI))
         return 1
     
     if (arrRSSI < 0.000001):  #Special case: negative argument.  return 1/ret.
         ret =  math.log(-1*arrRSSI, 10) * 10.0
-        print("#### ArrRSSI_to_dBm:(%d) = %3.2f" % (arrRSSI, -1 * ret))
+        #print("#### ArrRSSI_to_dBm:(%d) = %3.2f" % (arrRSSI, -1 * ret))
         return -1 * ret
     else:
         ret =  math.log(arrRSSI, 10) * 10.0
-        print("#### ArrRSSI_to_dBm:(%d)=%3.2f " % (arrRSSI, ret))
+        #print("#### ArrRSSI_to_dBm:(%d)=%3.2f " % (arrRSSI, ret))
         return ret
 
 
@@ -199,20 +200,51 @@ def dBm_to_ArrRSSI(sig, ref):
     return_negative = False
     delta =  (-1 * ref) - (-1 * sig) 
     if (delta < 0.00000001) and (delta > -0.00000001):  #special case: 0 dBm delta
-        print("#### dBm_toArrRSSI:(%d, %d)  :: special case (0). Returning 1  " % (sig, ref))      
+        #print("#### dBm_toArrRSSI:(%d, %d)  :: special case (0). Returning 1  " % (sig, ref))      
         return 1 #
     if (delta < 0): #special case, negative
         return_negative = True
         delta *= -1.0
+
     x = delta / 10
     ret =  math.pow(10,x)
     if (return_negative):
-        print("#### dBm_toArrRSSI:(%d, %d)  :: delta = %d  x = %d, ret = 10^x :: %3.2f" % (sig, ref, delta, x, -1*ret))
+        #print("#### dBm_toArrRSSI:(%d, %d)  :: delta = %d  x = %d, ret = 10^x :: %3.2f" % (sig, ref, delta, x, -1*ret))
         return (-1 * ret)
     else:
-        print("#### dBm_toArrRSSI:(%d, %d)  :: delta = %d  x = %d, ret = 10^x :: %3.2f" % (sig, ref, delta, x, ret))
+        #print("#### dBm_toArrRSSI:(%d, %d)  :: delta = %d  x = %d, ret = 10^x :: %3.2f" % (sig, ref, delta, x, ret))
         return ret 
 
+def test_one(delta_l):
+    rssi_l = []
+    ret_delta_l=[]
+
+    ref=random.randint(-75,-55)
+    for d in delta_l:
+        r = dBm_to_ArrRSSI(ref + d, ref)
+        rssi_l.append(r)
+
+    for r in rssi_l:
+        d=ArrRSSI_to_dBm(r)
+        ret_delta_l.append(d)
+
+    f=' {:7.2f},'*len(delta_l)
+    s=f.format(*delta_l)
+    print("#### dBm_Delta: [%s]" % (s))
+    s= f.format(*rssi_l)
+    print("#### arr_RSSI : [%s]" % (s))
+
+    return ret_delta_l
+def test_two(delta_arrR):
+    ret_delta_d=[]
+    for r in delta_arrR:
+        ret_delta_d.append( ArrRSSI_to_dBm(r))
+
+    f=' {:7.2f},'*len(ret_delta_d)
+    s=f.format(*delta_arrR)
+    print("#### rRSSI:      [%s]" % (s))
+    s= f.format(*ret_delta_d)
+    print("#### dBm_delta : [%s]" % (s))
 
 
 def main():
@@ -230,40 +262,20 @@ def main():
         max=int(sys.argv[2])
     if (len(sys.argv) > 1):
         curr=int(sys.argv[1])
-
-    delta_l=[30, 25, 21, 20, 19, 16, 13, 10, 0, -10, -13, -16, -19, -20, -21, -25, -30]
-    rssi_l = []
-    ret_delta_l=[]
-    #Workaround expecting reference
-    for d in delta_l:
-        r = dBm_to_ArrRSSI(min + d, min)
-        rssi_l.append(r)
-
-    for r in rssi_l:
-        d=ArrRSSI_to_dBm(r)
-        ret_delta_l.append(d)
+    print("############ Delta dBm to rRSSI comparison########")
+    delta_dbm_l=[21, 20, 13, 10, 8, 5, 0, -5, -8, -10, -13, -20, -21, -25]
+    test_one(delta_dbm_l)
+    print("")
+    print("###########  rRSSI to delta_dBm comparison#########")
+    delta_rR_l = [ 20, 15, 10, 3, 0, -3, -10, -15, -20]
+    test_two(delta_rR_l)
     return
-    # dBm_to_ArrRSSI(-55, -75)        # =  100.0  // (delta = 20)
-    # dBm_to_ArrRSSI(-56, -75)        # ~~  80.0  // (delta = 19)
-    # dBm_to_ArrRSSI(-59, -75)        # ~~  40.0  // (delta = 16)
-    # dBm_to_ArrRSSI(-62, -75)        # ~~  20.0  // (delta = 13)
-    # dBm_to_ArrRSSI(-65, -75)        # =   10.0  // (delta = 10)
-    # dBm_to_ArrRSSI(-75, -75)        # =    1.0  // (delta = 0.0)
-    # dBm_to_ArrRSSI(-85, -75)        # =  -10.0  // (delta = -10)
-    # dBm_to_ArrRSSI(-95, -75)        # = -100.0
-
-    dbm_l  = [ 30, 23, 21, 20, 10, 9, 6, 3, 1, 0, 'X', 0, -1, -3, -6, -9,  -10, -20, -21, -23, -30  ]         #// equivalent to 20 dBm .    is equivalent to 10 dBm  ~ .00000 dBm    ~-0.00000 dBm       -10
-     
-    for l in rssi_l:
-        r = ArrRSSI_to_dBm(l)
-        print("ArrRSSI_to_dBm(%d)=%3.2f"% (l, r))
-        print("Aka:  A delta of %d ArrRSSI required %3.2f dBm delta" % (l, r))
-        input("Y/n?")
-        
-    delta_l = [20, 19, 16, 13, 10, 0.0, -10, -20]
-    for d in delta_l:
-        dBm_to_ArrRSSI() 
-    return    
+    ### After studying the previous tables, I think that a colorbar should resemble:
+    ###         -13.01dBm                                +13.01dBm
+    ###          CCCCCCCCCCCCCCC   [REF]    CCCCCCCCCCCCCCC
+    ###         -20 rRSSI                               +20  rRSSI
+    return
+    ### YYY JC pickup here YYY
     generate_colorband(curr, max, min)
     return
     c = compute_signal_color(curr, max, min)
