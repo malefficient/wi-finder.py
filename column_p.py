@@ -79,7 +79,7 @@ def ascii_print_example_columns():
 def get_color():
     a,b,c=random.randint(0,255),random.randint(0,255),random.randint(0,255)
     cc = fg(a, b, c)
-    return cc
+    return fg.white
 
 class MeasureyM_text_Renderer:
     initialized=False
