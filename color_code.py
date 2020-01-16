@@ -180,14 +180,12 @@ def compute_signal_color(mag, m_max, m_min):
 
 
 def ArrRSSI_to_dBm(arrRSSI):
-    negative_argument = False
     
     if (arrRSSI < 0.000001) and (arrRSSI > -0.000001): #Special case: 0
         print("#### ArrRSSI_to_dBm:(%d)~~(0)   = (1) (special case)" % (arrRSSI))
         return 1
     
     if (arrRSSI < 0.000001):  #Special case: negative argument.  return 1/ret.
-        negative_argument = True
         ret =  math.log(-1*arrRSSI, 10) * 10.0
         print("#### ArrRSSI_to_dBm:(%d) = %3.2f" % (arrRSSI, -1 * ret))
         return -1 * ret
@@ -200,20 +198,16 @@ def ArrRSSI_to_dBm(arrRSSI):
 def dBm_to_ArrRSSI(sig, ref):
     return_negative = False
     delta =  (-1 * ref) - (-1 * sig) 
+    if (delta < 0.00000001) and (delta > -0.00000001):  #special case: 0 dBm delta
+        print("#### dBm_toArrRSSI:(%d, %d)  :: special case (0). Returning 1  " % (sig, ref))      
+        return 1 #
     if (delta < 0): #special case, negative
         return_negative = True
         delta *= -1.0
-
     x = delta / 10
     ret =  math.pow(10,x)
-    #f(-20) = 10^-2
-    #f(-10) = 10^-1
-    #f(  0) = 1 = 10^0 
-    #f(10) = 10
-    #f(20) = 100
-    ##Solv for Z: math.pow(10, z) == 20
     if (return_negative):
-        print("#### dBm_toArrRSSI:(%d, %d)  :: delta = %d  x = %d, ret = 10^x :: %3.2f" % (sig, ref, delta, x, ret*-1))
+        print("#### dBm_toArrRSSI:(%d, %d)  :: delta = %d  x = %d, ret = 10^x :: %3.2f" % (sig, ref, delta, x, -1*ret))
         return (-1 * ret)
     else:
         print("#### dBm_toArrRSSI:(%d, %d)  :: delta = %d  x = %d, ret = 10^x :: %3.2f" % (sig, ref, delta, x, ret))
@@ -237,7 +231,7 @@ def main():
     if (len(sys.argv) > 1):
         curr=int(sys.argv[1])
 
-    delta_l=[30, 25, 21, 20, 19, 16, 13, 10, 0.0, -10, -13, -16, -19, -20, -21, -25, -30]
+    delta_l=[30, 25, 21, 20, 19, 16, 13, 10, 0, -10, -13, -16, -19, -20, -21, -25, -30]
     rssi_l = []
     ret_delta_l=[]
     #Workaround expecting reference
