@@ -79,7 +79,7 @@ def ascii_print_example_columns():
 def get_color():
     a,b,c=random.randint(0,255),random.randint(0,255),random.randint(0,255)
     cc = fg(a, b, c)
-    return cc
+    return fg.white
 
 class MeasureyM_text_Renderer:
     initialized=False
@@ -89,7 +89,7 @@ class MeasureyM_text_Renderer:
     col_width={}
     num_entries={}
     num_cols=0
-    column_order=[3,7,5,6,2]
+    column_order=[3,7,5,6]
     flat_column_headings = []
     flat_column_widths=[]
     flat_column_fmt_strs=""
@@ -104,9 +104,9 @@ class MeasureyM_text_Renderer:
 
         self.colors_enabled = 0
         self.left_margin="        "
-        print("###MeasureyM_text_Renderer::Init()")
+        #print("###MeasureyM_text_Renderer::Init()")
         self.initialized = True
-        input("III")
+        
         # Init should be passed a MeasureyM that resembles those it is expected to later process and output.
         # We perform as much one-time-only formatting work here, so that print() can be relatively fast.
         # Code within the init function is optimized for clarity over performance. 
@@ -122,13 +122,13 @@ class MeasureyM_text_Renderer:
             if self.num_entries[b] == 0:
                 print("    Warning: Unexpected case. 0 data entries for field:(%d)" % (b))
                 print (" EXPERIMENTAL: Removing bit b (%d) from self.column_orders)" % (b))
-                print("Pre:: %s" % (self.column_order))
+                #print("Pre:: %s" % (self.column_order))
                 self.column_order.remove(b)
             
-        print(self.column_order)
-        print(self.num_entries)
-        print(M.Measurey_Map)
-        input("QQ")
+        ##print(self.column_order)
+        ##print(self.num_entries)
+        ##print(M.Measurey_Map)
+        ##input("QQ")
 
         for b in self.column_order:
             curr_h = self.rtap_table_helper.bit_to_name_alt(b)
@@ -148,9 +148,9 @@ class MeasureyM_text_Renderer:
                     self.flat_column_fmt_strs += (rs.all + "|" + "{}" + "{:^10.8}" + rs.all)   #TODO: Also this.
 
         self.num_flat_headings = len(self.flat_column_headings)
-        print("   Pretty_P::Init Generated %d Flattened headings: %s" % ( self.num_flat_headings, self.flat_column_headings))
-        print("   Pretty_P::Init from %s %s" % (M, M.Measurey_Map))
-        input("Pretty_P::Init::end")
+        ##print("   Pretty_P::Init Generated %d Flattened headings: %s" % ( self.num_flat_headings, self.flat_column_headings))
+        ##print("   Pretty_P::Init from %s %s" % (M, M.Measurey_Map))
+        ##input("Pretty_P::Init::end")
 
 
     def ret_header(self):
