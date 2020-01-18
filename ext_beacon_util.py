@@ -12,7 +12,7 @@ from rtap_ext_util import Listify_Radiotap_Headers
 
 
 def return_IE_by_tag(pkt, tagno, list_enabled=False):
-  print("#### return_IE_by_tag::Start")
+  #print("#### return_IE_by_tag::Start")
   ret_l=[]
   P=pkt.getlayer(Dot11)
   dot11elt = P.getlayer(Dot11Elt)
@@ -75,7 +75,7 @@ class rates_descriptor_t:
       print("Error. rates_decriptor_t expected type:bytes as argument. Passed %s" % (type(b)))
       return
     
-    print("#### rates_descriptor_t::process")
+    #print("#### rates_descriptor_t::process")
     for c in b:
       if (c & 0x80): #Rate is marked as 'Basic' (all client must support)
         m_b = True
@@ -84,7 +84,7 @@ class rates_descriptor_t:
         m_b = False
       
       c = c / 2 #Convert value into Mbps (input is 500kbps)
-      print(" Basic:%d curr_rate Mbps %d" %(m_b, c))
+      #print(" Basic:%d curr_rate Mbps %d" %(m_b, c))
       self.rates_list.append(c)
       
       ##Base case (
@@ -147,7 +147,8 @@ class modulation_descriptor_t:
 
     tag_61_HT = return_IE_by_tag(pkt, 61)
     if (tag_61_HT != None):
-      print("This is where we process Dot11N Rates")
+      pass 
+      ## print("This is where we process Dot11N Rates") #YYY: TODO
       #tag_61_HT.show2()
       #input("")
       
@@ -204,6 +205,7 @@ class modulation_descriptor_t:
 class TargetCharacteristics:
   # These values excep num_ext_antennas/related are parsed/deduced from Beacon Info Elements (not the radiotap meta header)
   _initialized = False
+  BSSID = None
   tags = {}
 
   ssid_hidden = False
@@ -221,15 +223,20 @@ class TargetCharacteristics:
   ## (I.e., this is the detailed 'first-pass' over a beacon, and while we expect values to change over execution, the existence of these fields will not vary. If they do, then hopefully we throw an execption real quick to catch wtf is going on.)
 
   def summary(self):
-    ret = ""
-    ret += ("Chan:%02d" %  self.modulation_info.curr_channel)
+    b1 = ' Target:{} '.format(str(self.BSSID).upper())
+    b2= '{:-^40}\n'.format(b1)
+    ret = b2
+    ndent = "     "
+    
     if (self.ssid_hidden):
-      ret += "SSID: <HIDDEN>"
+      ret += ndent + "SSID: <HIDDEN>\n"
     else:
-      ret += " SSID: %s" % (self.ssid)
-
-    #ret += "    Rates:%s" % (self.rate_info)
-    ret += "    Modulation:%s" % (self.modulation_info)
+      ret += ndent + "SSID: %s\n" % (self.ssid)
+    
+    ret +=  ndent + "Chan:%02d\n" % (self.modulation_info.curr_channel)
+    ret +=  ndent + "Modulation: "
+    #ret += ndent + "Rates:%s" % (self.rate_info)
+    #ret += ndent + "Modulation:%s" % (self.modulation_info)
     print(ret)
     return ret
     
@@ -237,7 +244,7 @@ class TargetCharacteristics:
   def init_main(self, pkt):
     P=pkt.getlayer(Dot11)
     print("#### TargetCharacteristiscs::Interpret_Beacon_IEs::start")
-
+    self.BSSID=P.addr3
     ## ID=00, SSID.             If SSID.len=0, or SSID is curiously completely missing, assume 'hidden' BSSID.
     tag_0_ssid=return_IE_by_tag(pkt, 0)
     if (tag_0_ssid == None or tag_0_ssid.len == 0 or (tag_0_ssid.len == 1 and tag_0_ssid.info =="")):
@@ -261,18 +268,18 @@ class TargetCharacteristics:
   def init(self, pkt): # Targetcharacteristics
     self._inital_beacon = pkt
     print("####TargetCharecteristics::init")
-    input("ParseingTargetBeaon")
+    #input("ParseingTargetBeaon")
     R=pkt.getlayer(RadioTap)
     r=RadioTap( raw(R)[:R.len] )
 
     #### Iterate through info-elements, storing/caching relevant info
     self.init_main(pkt)
-    print("#### 2) OK. Beacon data parsed. Shown bewlow")
+    ## OK. Beacon data parsed. Show below
     self.summary()
     ######################################
 
     ARrrs= Listify_Radiotap_Headers(pkt)
     top_rtap = ARrrs.pop()
     self.num_extra_measurements = len(ARrrs)
-    print ("Num extra measurement on target:%d" % (self.num_extra_measurements))
+    #print ("Num extra measurement on target:%d" % (self.num_extra_measurements))
 
