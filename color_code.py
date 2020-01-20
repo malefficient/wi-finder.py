@@ -215,43 +215,118 @@ def dBm_to_ArrRSSI(sig, ref):
         #print("#### dBm_toArrRSSI:(%d, %d)  :: delta = %d  x = %d, ret = 10^x :: %3.2f" % (sig, ref, delta, x, ret))
         return ret 
 
-def test_one(delta_l):
-    rssi_l = []
-    ret_delta_l=[]
+def dBm_to_micro_watt(sig):
+    return_negative = False
+    x = sig / 10
+    ret =  math.pow(10,x+3)
+    return ret 
 
-    ref=random.randint(-75,-55)
-    for d in delta_l:
-        r = dBm_to_ArrRSSI(ref + d, ref)
-        rssi_l.append(r)
+def micro_watt_to_dBm(mw_in):
+    if (mw_in < 0.00000001) and (mw_in > -0.00000001):
+        print("microwatt_to_dBm special case: passed 0. Returning 1")
+        return 1
+    ret =  math.log(float(mw_in), 10) * 10.0  - 30
+    if (ret < 0.00000001 and ret > -0.00000001):
+        return 0
+    return ret
 
-    for r in rssi_l:
-        d=ArrRSSI_to_dBm(r)
-        ret_delta_l.append(d)
+def dBm_to_microwatt_test(dBm_l):
+    microwatt_l=[]
+    synthesized_dBm_l=[]
+    for r in dBm_l:
+        microwatt_l.append(dBm_to_micro_watt(r))
 
-    f=' {:7.2f},'*len(delta_l)
-    s=f.format(*delta_l)
-    print("#### dBm_Delta: [%s]" % (s))
-    s= f.format(*rssi_l)
-    print("#### arr_RSSI : [%s]" % (s))
+    f=' {:7.7f},'*len(dBm_l)
+    s=f.format(*dBm_l)
+    print("####          dBm in: [%s]" % (s))
+    s= f.format(*microwatt_l)
 
-    return ret_delta_l
-def test_two(delta_arrR):
-    ret_delta_d=[]
-    for r in delta_arrR:
-        ret_delta_d.append( ArrRSSI_to_dBm(r))
+    print("#### micro-watt_out : [%s]" % (s))
+    print("---------Flip side----------")
+    s= f.format(*microwatt_l)    
+    print("#### micro-watt_in : [%s]" % (s))
+    
+    for mw in microwatt_l:
+        synthesized_dBm_l.append(micro_watt_to_dBm(mw))
 
-    f=' {:7.2f},'*len(ret_delta_d)
-    s=f.format(*delta_arrR)
-    print("#### rRSSI:      [%s]" % (s))
-    s= f.format(*ret_delta_d)
-    print("#### dBm_delta : [%s]" % (s))
+    s=f.format(*synthesized_dBm_l)
+    print("#### dBm out       : [%s]" % (s))
 
+    return 0
+
+def microwatt_to_dBm_test(mw_l):
+    synthesized_dBm_l=[]
+    for m in mw_l:
+        synthesized_dBm_l.append(micro_watt_to_dBm(m))
+
+    f=' {:7.7f},'*len(mw_l)
+    s=f.format(*mw_l)
+    print("####          micro-watt in: [%s]" % (s))
+   
+    s= f.format(*synthesized_dBm_l)
+
+    print("#### dBm out          : [%s]" % (s))
+    return 0
+    print("---------Flip side----------")
+    s= f.format(*microwatt_l)    
+    print("#### micro-watt_in : [%s]" % (s))
+    
+    for mw in microwatt_l:
+        synthesized_dBm_l.append(micro_watt_to_dBm(mw))
+
+    s=f.format(*synthesized_dBm_l)
+    print("#### dBm out       : [%s]" % (s))
+
+def solve_for_x_factor(dBm_in, multiplier=20):
+    microwatt_in=dBm_to_micro_watt(dBm_in)
+    microwatt_in_20 = multiplier * microwatt_in
+    dBm_out = micro_watt_to_dBm(microwatt_in_20)
+    #print("#### Solving for x-factor(%s, %d)" % (dBm_in, multiplier))
+    #print("    dBm_in: (%s) -> microwatts: (%s)" %(dBm_in, microwatt_in))
+    #print("    microwatts_in: (%s) times %d =  %s" %(microwatt_in, multiplier, microwatt_in_20))
+    #print("    %s microwatts  -> dBm %s" % ( microwatt_in_20, dBm_out))
+    print("     %d times %s dBm = %s dBm " % (multiplier, dBm_in, dBm_out))
+    x = dBm_out / dBm_in
+    print("    'Cuz that would make our X-Factor %s" % (x))
+    return x
+    
+def test_x_factor(in_dBm, multiplier):
+    print("#### Test x factor: %3.2f, %d" % (in_dBm, multiplier))
+    y = in_dBm
+
+    twenty_x_ret_scale=[]
+    if (multiplier > 0):
+        while ( y < 0):
+            x = solve_for_x_factor(y, multiplier)
+            y = y * x
+            twenty_x_ret_scale.append( (y, 1/x))
+    return
+    #delta_dbm_l = []
+    #for idx in range(0, len(twenty_x_ret_scale) - 1):
+    #    delta_dbl_l[idx] = twenty_x_ret_scale[idx + 1] - twenty_x_ret_scale[idx]
+
+    f=' {:}\n'*len(twenty_x_ret_scale)
+    s=f.format(*twenty_x_ret_scale)
+    print("     %s" % (s))
+    #print("--- in more english ---")
+    #for idx in range(1, len(twenty_x_ret_scale)):
+    #    print(" %3.2 dBm times %d = %3.7f dBm" % (twenty_x_ret_scale[idx - 1][0], multipler, delta_dbm_l[idx]))
+
+    #print("   stepping up from %d dBm by linear multiplier of %d" % (in_dBm, multiplier))
+    #print("   Delta_Dbm(%d) = %3.7f" % (in_dBm, multiplier))
+    
+    return
 
 def main():
     max=-55
     min=-75
     curr=-55
     
+    test_x_factor(-120,20 )
+    return
+    x = solve_for_x_factor(-67, 20)
+    print("%s dBm = ")
+    return
     print("sys.argc = %d" % (len(sys.argv)))
     if len (sys.argv) > 4:
         print("Error. To many arguments passed to %s" % (sys.argv[0]))
@@ -262,13 +337,15 @@ def main():
         max=int(sys.argv[2])
     if (len(sys.argv) > 1):
         curr=int(sys.argv[1])
-    print("############ Delta dBm to rRSSI comparison########")
-    delta_dbm_l=[21, 20, 13, 10, 8, 5, 0, -5, -8, -10, -13, -20, -21, -25]
-    test_one(delta_dbm_l)
+    #print("############ Delta dBm to microwatt comparison########")
+    #delta_dbm_l=[ -75, -67, 45  -1, 0, 1, 3, 10]
+    #dBm_to_microwatt_test(delta_dbm_l)
+    
     print("")
-    print("###########  rRSSI to delta_dBm comparison#########")
-    delta_rR_l = [ 20, 15, 10, 3, 0, -3, -10, -15, -20]
-    test_two(delta_rR_l)
+    print("###########  microwatt to dBm comparison#########")
+    milliwatt_test_l = [1, 1.25892]
+    microwatt_test_l = [1000*x for x in milliwatt_test_l]
+    microwatt_to_dBm_test(microwatt_test_l)
     return
     ### After studying the previous tables, I think that a colorbar should resemble:
     ###         -13.01dBm                                +13.01dBm
