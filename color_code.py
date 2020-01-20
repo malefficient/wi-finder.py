@@ -281,24 +281,48 @@ def solve_for_x_factor(dBm_in, multiplier=20):
     microwatt_in=dBm_to_micro_watt(dBm_in)
     microwatt_in_20 = multiplier * microwatt_in
     dBm_out = micro_watt_to_dBm(microwatt_in_20)
-    print("#### Solving for x-factor(%s, %d)" % (dBm_in, multiplier))
-    print("    dBm_in: (%s) -> microwatts: (%s)" %(dBm_in, microwatt_in))
-    print("    microwatts_in: (%s) times %d =  %s" %(microwatt_in, multiplier, microwatt_in_20))
-    print("    %s microwatts  -> dBm %s" % ( microwatt_in_20, dBm_out))
-    print("    Is %s dBm %s times %s? dBm " % (dBm_out, multiplier, dBm_in))
+    #print("#### Solving for x-factor(%s, %d)" % (dBm_in, multiplier))
+    #print("    dBm_in: (%s) -> microwatts: (%s)" %(dBm_in, microwatt_in))
+    #print("    microwatts_in: (%s) times %d =  %s" %(microwatt_in, multiplier, microwatt_in_20))
+    #print("    %s microwatts  -> dBm %s" % ( microwatt_in_20, dBm_out))
+    print("     %d times %s dBm = %s dBm " % (multiplier, dBm_in, dBm_out))
     x = dBm_out / dBm_in
     print("    'Cuz that would make our X-Factor %s" % (x))
     return x
     
-def test_x_factor(in_dBm):
-    print("#### Test x factor: %3.2f" % (in_dBm))
+def test_x_factor(in_dBm, multiplier):
+    print("#### Test x factor: %3.2f, %d" % (in_dBm, multiplier))
+    y = in_dBm
+
+    twenty_x_ret_scale=[]
+    if (multiplier > 0):
+        while ( y < 0):
+            x = solve_for_x_factor(y, multiplier)
+            y = y * x
+            twenty_x_ret_scale.append( (y, 1/x))
+    return
+    #delta_dbm_l = []
+    #for idx in range(0, len(twenty_x_ret_scale) - 1):
+    #    delta_dbl_l[idx] = twenty_x_ret_scale[idx + 1] - twenty_x_ret_scale[idx]
+
+    f=' {:}\n'*len(twenty_x_ret_scale)
+    s=f.format(*twenty_x_ret_scale)
+    print("     %s" % (s))
+    #print("--- in more english ---")
+    #for idx in range(1, len(twenty_x_ret_scale)):
+    #    print(" %3.2 dBm times %d = %3.7f dBm" % (twenty_x_ret_scale[idx - 1][0], multipler, delta_dbm_l[idx]))
+
+    #print("   stepping up from %d dBm by linear multiplier of %d" % (in_dBm, multiplier))
+    #print("   Delta_Dbm(%d) = %3.7f" % (in_dBm, multiplier))
     
+    return
+
 def main():
     max=-55
     min=-75
     curr=-55
     
-    test_x_factor(-67)
+    test_x_factor(-120,20 )
     return
     x = solve_for_x_factor(-67, 20)
     print("%s dBm = ")
