@@ -3,7 +3,7 @@ import sys
 import sty
 import random
 
-class ColorClass():
+class ColorClassW():
     """Class that can convert between different color formats.
        Internally stored as a floats between 0.0 and 1.0 of 4 elements (alpha, blue, green, red)"""
     def __init__(self):
@@ -64,60 +64,6 @@ class ColorClass():
 
 
 
-def generate_colorband(mag, m_min, m_max, DistanceScaling='Linear'):
-    if (DistanceScaling == 'Linear'):
-        print("#### Generating colorband(%d,%d%d) with Linear scaling" % (mag, m_min, m_max))
-    elif (DistanceScaling=='Exponential'):
-        print("#### Generating colorband(%d,%d%d) with Exponential scaling" % (mag, m_min, m_max))
-
-
-def normalize_sig_linear(self, sig, MaxSig, MinSig):
-    """Given a signal and a range , will return a ratio between 0.0 and 1.0 representing where
-        sig falls between P.MinSignalLeven and P.MaxSignalLevel"""
-    a = -1.0 * MaxSig
-    b = -1.0 * MinSig
-    range_to_cover = b - a
-    SigOffsetFromBottom = b + sig
-
-    ratio_covered = SigOffsetFromBottom / b
-    return ratio_covered
-def exponentialize_sig(self, sig, MaxSig, MinSig):
-    """ turn sig into expoential distance..Halve MetersToMaxSig for ever 3dB between sig and MaxSig"""
-    a = -1.0 * MaxSig
-    b = -1.0 * MinSig
-    c = -1.0 * sig
-    range_to_cover = b - a
-
-    #print ("a:%d b:%d c:%d" % (a,b,c))
-    db_from_top =   c - a
-
-    y = db_from_top / 3
-    #print("y: %f" % (y))
-    ret = math.pow(2, (P.exp_max- y))
-    #ret += P.MeterFloor
-    #print("Sig = %d, db_rom_top= %d", sig, db_from_top)
-    #print("ret = %f" % (ret))
-    #sys.stdin.read(1)
-    return ret
-  
-  
-def compute_signal_intensity(mag, m_max, m_min):
-    #positivify these annoying negative numbers
-    m_min = math.fabs(m_min)
-    m_max = math.fabs(m_max)
-    my_spread = math.fabs(m_min - m_max)
-    db_above_min = m_min - math.fabs(mag)
-    if (db_above_min > my_spread):
-        print("compute_signal_color: Warning input value (%d) > max (%d)" %(mag, m_max))
-
-    numerator = 3.0 * db_above_min
-    denominator = my_spread
-    if (denominator != 0):
-        intensity = numerator/denominator
-    else:
-        intensity = 1 #Theres only one signal reading.
-    print("###Return intensity from 0.0->3.0")
-    return intensity
 
 def compute_signal_color(mag, m_max, m_min):
     """Takes in mag, m_max, m_min  in dB. returns a color scaled approriately"""
@@ -145,14 +91,11 @@ def compute_signal_color(mag, m_max, m_min):
 ## ArrRSSI_to_dBM(0.10) = -10    dBm_toArrRSSI(-10) = 0.10
 ## ArrRSSI_to_dBm(0.01) = -20    dBm_toArrRSSI(-20) = 0.01
 
-
-
-
-
 def dBm_to_micro_watt(sig):
-    return_negative = False
+    #return_negative = False
     x = sig / 10
     ret =  math.pow(10,x+3)
+    print("dBm_to_microwatt(%d) = %s" % (sig, ret))
     return ret 
 
 def micro_watt_to_dBm(mw_in):
@@ -215,10 +158,10 @@ def solve_for_x_factor(dBm_in, multiplier=20):
     microwatt_in=dBm_to_micro_watt(dBm_in)
     microwatt_in_20 = multiplier * microwatt_in
     dBm_out = micro_watt_to_dBm(microwatt_in_20)
-    #print("#### Solving for x-factor(%s, %d)" % (dBm_in, multiplier))
-    #print("    dBm_in: (%s) -> microwatts: (%s)" %(dBm_in, microwatt_in))
-    #print("    microwatts_in: (%s) times %d =  %s" %(microwatt_in, multiplier, microwatt_in_20))
-    #print("    %s microwatts  -> dBm %s" % ( microwatt_in_20, dBm_out))
+    print("#### Solving for x-factor(%s, %d)" % (dBm_in, multiplier))
+    print("    dBm_in: (%s) -> microwatts: (%s)" %(dBm_in, microwatt_in))
+    print("    microwatts_in: (%s) times %d =  %s" %(microwatt_in, multiplier, microwatt_in_20))
+    print("    %s microwatts  -> dBm %s" % ( microwatt_in_20, dBm_out))
     print("     %d times %s dBm = %s dBm " % (multiplier, dBm_in, dBm_out))
     x = dBm_out / dBm_in
     print("    'Cuz that would make our X-Factor %s" % (x))
@@ -246,15 +189,98 @@ def test_x_factor(in_dBm, multiplier):
     #print("%3.7s" % (twenty_x_ret_scale))
     #return
 
+def gen_color_scale(dBm_center, scaleFactor=30, stepsize=3):
+    print("#### gen_color scale(%d, %d %d)" % (dBm_center, scaleFactor, stepsize))
+    
+    color_scale={}
+
+    for x in range(1, scaleFactor + stepsize, stepsize):
+        print("    %d" % (x))
+    exit(0)    
+    uW_in=dBm_to_micro_watt(in_dBm)
+    microwatt_in_times_x = scale_factor * uW_in
+    dBm_max = micro_watt_to_dBm(microwatt_in_times_x)
+
+    #in_uW=dBm_to_micro_watt(in_dBm)
+    microwatt_in_divided_by_x = (1/in_multiplier) * uW_in
+    dBm_min = micro_watt_to_dBm(microwatt_in_divided_by_x)
+
+
+    #uW_max = dBm_to_micro_watt(dBm_max)
+    #uW_min = dBm_to_micro_watt(dBm_min)
+    print("    gen_color_range(): dBm_min:(%3.2f) dBm_in:(%3.2f) dBm_max:(%3.2f)" % (dBm_min, in_dBm, dBm_max))
+    
+    input("")
+    ### Okay
+    return
+
+
+
+def gen_color_range(in_dBm, in_multiplier):
+    print("#### gen_color range(%d, %d)" % (in_dBm, in_multiplier))
+   
+    uW_in=dBm_to_micro_watt(in_dBm)
+    microwatt_in_times_x = in_multiplier * uW_in
+    dBm_max = micro_watt_to_dBm(microwatt_in_times_x)
+
+    #in_uW=dBm_to_micro_watt(in_dBm)
+    microwatt_in_divided_by_x = (1/in_multiplier) * uW_in
+    dBm_min = micro_watt_to_dBm(microwatt_in_divided_by_x)
+
+    #uW_max = dBm_to_micro_watt(dBm_max)
+    #uW_min = dBm_to_micro_watt(dBm_min)
+    print("    gen_color_range(): dBm_min:(%3.2f) dBm_in:(%3.2f) dBm_max:(%3.2f)" % (dBm_min, in_dBm, dBm_max))
+    
+    input("")
+    ### Okay
+    return
+ 
+class Color_scale_class():
+    """ Provides a convenient mechanism to map signal strengths (in dBm) to colorPallete"""
+    color_scale = {} 
+    color_pallete = "pastel" #YYY map these to the 'colorcet' (or similar) equivalents
+    ###  ---  ###
+    def __init__(self, pallete_name="default"):
+        self.color_pallete = pallete_name
+        
+    def set_scale(self, dBm_center, multiplier=20):
+        """Scale color window such that center_dBm * multipler = max"""
+        microwatt_center=dBm_to_micro_watt(dBm_center)
+        microwatt_in_times_X = multiplier * microwatt_center
+        microwatt_in_div_X = (1.0 / multiplier) * microwatt_center
+        
+        dBm_top    = micro_watt_to_dBm(microwatt_in_times_X)
+        dBm_bottom = micro_watt_to_dBm(microwatt_in_div_X)
+        
+        print("#### Color_scale_class: Solving for scale(%s, %d)" % (dBm_center, multiplier))
+        print("    dBm_in: (%s) -> microwatts: (%s)" %(dBm_center, microwatt_center))
+        print("    microwatts_center: (%s) times %d =  %s" %(microwatt_center, multiplier, microwatt_in_times_X))
+        print("    %s microwatts  -> dBm %s" % ( microwatt_in_times_X, dBm_top))
+        print("     %d times %s dBm = %s dBm, therfore" % (multiplier, dBm_center, dBm_top))
+        print("        therefore dBm_top is %s " % (dBm_top))
+        print("        ..and dBm_bottom is %s " % (dBm_bottom))
+        
+        #x = dBm_out / dBm_center
+        #print("    'Cuz that would make our ZZZ-Factor %s" % (x))
+        exit(0)
+        
+        input("ASDF")
+        return
+
+
 def main():
     max=-55
     min=-75
     curr=-55
-    
-    test_x_factor(-82, 20 )
-    return
-    x = solve_for_x_factor(-67, 20)
-    print("%s dBm = ")
+    #dBm_to_micro_watt(-67)
+    #return
+    C = Color_scale_class()
+    C.set_scale(-45, 30)
+    #gen_color_scale(-67, 20, 1)
+    #return
+    #test_x_factor(-82, 20 )
+    #return
+    #x = solve_for_x_factor(-90, 18)
     return
     print("sys.argc = %d" % (len(sys.argv)))
     if len (sys.argv) > 4:
