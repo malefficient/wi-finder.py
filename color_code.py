@@ -91,21 +91,81 @@ def compute_signal_color(mag, m_max, m_min):
 ## ArrRSSI_to_dBM(0.10) = -10    dBm_toArrRSSI(-10) = 0.10
 ## ArrRSSI_to_dBm(0.01) = -20    dBm_toArrRSSI(-20) = 0.01
 
-def dBm_to_micro_watt(sig):
-    #return_negative = False
+# Micro-watt to dBm/ dBm_to_micro-watt: self-describing
+
+# | milliwatt (mW) | microwatt (uW) | nanowatt (nW)   |
+# |  1.0           | 1,000 (1e+3)   |  1000000 (1e+6) |
+# |  0.001 (1e-3)   1.0             |  1000    (1e+3) | 
+# |  1e-6       | 1000           | 1.0        | 
+
+#For example, 1.314E+1  means  1.314 * 10  which is 13.14.
+def dBm_to_milliwatt(sig):
     x = sig / 10
     ret =  math.pow(10,x+3)
     print("dBm_to_microwatt(%d) = %s" % (sig, ret))
     return ret 
 
-def micro_watt_to_dBm(mw_in):
+def milliwatt_to_dBm(mw_in):
     if (mw_in < 0.00000001) and (mw_in > -0.00000001):
-        print("microwatt_to_dBm special case: passed 0. Returning 1")
+        print("microwatt_to_dBm special case: passed ~0.0. Returning 1")
         return 1
     ret =  math.log(float(mw_in), 10) * 10.0  - 30
-    if (ret < 0.00000001 and ret > -0.00000001):
-        return 0
     return ret
+
+
+def milliwatt_to_nanowatt(_in):
+    return 1e+6*_in
+#    1           1000
+def microwatt_to_nanowatt(_in):
+    return 1e+3*_in
+#    1             1
+def nanowatt_to_nanowatt(_in):
+    return 1e+0*_in 
+
+#     1          1000
+def milliwatt_to_microwatt(_in):
+    return 1e+3*_in
+def microwatt_to_microwatt(_in):
+    return 1e+0*_in
+def nanowatt_to_microwatt(_in):
+    return 1e-3*_in 
+
+def milliwatt_to_milliwatt(_in):
+    return 1e+0*_in
+def microwatt_to_milliwatt(_in):
+    return 1e-3*_in
+def nanowatt_to_milliwatt(_in):
+    return 1e-6*_in 
+
+
+
+def milliwatt_to_nano_watt(mw_in):
+    return 1e-6*mw_in
+def microwatt_to_nano_watt(uw_in):
+    return 1e-3 * uw_in
+
+def milliwatt_to_nano_watt(mw_in):
+    return 1e-6*mw_in
+def microwatt_to_nano_watt(uw_in):
+    return 1e-3 * uw_in
+
+
+
+
+
+
+# def dBm_to_nano_watt(sig):
+#     x = sig / 1000
+#     ret =  math.pow(10,x+3)
+#     print("dBm_to_nanowatt(%d) = %s" % (sig, ret))
+#     return ret 
+# # almost_micro-watt to dBm/ dBm_to_almost_micro-watt: There is no SI unit defined for this 
+# def nano_watt_to_dBm(mw_in):
+#     if (mw_in < 0.00000001) and (mw_in > -0.00000001):
+#         print("nanowatt_to_dBm special case: passed ~0.0. Returning 1")
+#         return 1
+#     ret =  math.log(float(mw_in), 10) * 1000.0  - 30
+#     return ret
 
 def dBm_to_microwatt_test(dBm_l):
     microwatt_l=[]
@@ -215,6 +275,16 @@ def gen_color_scale(dBm_center, scaleFactor=30, stepsize=3):
     return
 
 
+def print_conversion_table(dBm_in):
+    print("#### Conversion table")
+    a = dBm_to_milliwatt(dBm_in)
+
+    b = milliwatt_to_microwatt(a)
+
+    c = milliwatt_to_nanowatt(a)
+
+    print ("%d (dBm) |  %f (mw)  |  %3.7f (uw)  |  %3.7f (nw)" %(dBm_in,a,b,c))
+    return
 
 def gen_color_range(in_dBm, in_multiplier):
     print("#### gen_color range(%d, %d)" % (in_dBm, in_multiplier))
@@ -255,7 +325,23 @@ class Color_scale_class():
     
     def ret_scale_Rrr(self, in_dBm):
         """Given input in dBm, where does it land on the previously configured scale."""
-
+    ##
+    # I.e., if scale.bottom        =  -16dBm (~20 uW) 
+    #          scale.top           =  -4dBm (~400 uW)
+    # then     ret_percent (300 uW) =  (300) / (scale.top_in_uW - scale.bottom_in_uW) == (300) / (400 -20) == 300 / (380) ~= 79%
+    # similarly scale.bottom = -75 (3.16227e-05 uW), 
+    #           scale.top    = -65 ()
+    #           ret_percent(-68 dBm) 
+    #           ret_percent(0.000126191 uW)
+    #           
+    #
+    #           ret_percent(5 uW) = 5 / (380) = 1%
+    ##          ret_percent (20 uW) = 0.0 
+    ##          ret_percent(190 uW) = 50.0
+    
+    def ret_percent(in_dBm):
+        """ return a value between 0-100 that represents the input parameters location ranging from self.bottom to self.top """
+        # I.e. set
     def set_scale(self, dBm_in, multiplier=20):
         """Scale color window such that center_dBm * multipler = max"""
         
@@ -287,16 +373,21 @@ class Color_scale_class():
 def main():
     max=-55
     min=-75
-    curr=-55
-    #dBm_to_micro_watt(-67)
-    #return
-    C = Color_scale_class()
-    C.set_scale(-75, 20) ###YYY: TODO: round these values to either int()'s or output them cleaner
-    print("%s" % (C))
+    curr=-75
+    print_conversion_table(curr)
+    return
+    #A = dBm_to_micro_watt(curr)
+    #B = microwatt_to_nanowatt(A)
+
+    print("%03d dBm is %07.8f micro_watts, or %7.8f nano-watts" % (curr, A, B))
+    return
+    #C = Color_scale_class()
+    #C.set_scale(-75, 20) ###YYY: TODO: round these values to either int()'s or output them cleaner
+    #print("%s" % (C))
     #gen_color_scale(-67, 20, 1)
     #return
-    #test_x_factor(-82, 20 )
-    #return
+    test_x_factor(-82, 20 )
+    return
     #x = solve_for_x_factor(-90, 18)
     return
     print("sys.argc = %d" % (len(sys.argv)))
