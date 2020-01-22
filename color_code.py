@@ -112,15 +112,25 @@ def milliwatt_to_dBm(mw_in):
     ret =  math.log(float(mw_in), 10) * 10.0  - 30
     return ret
 
+def milliwatt_to_picowatt(_in):
+    return 1e+9*_in
+def microwatt_to_picowatt(_in):
+    return 1e+6*_in
+def nanowatt_to_picowatt(_in):
+    return 1e+3*_in 
+def picowatt_to_picowatt(_in):
+    return 1e+0*_in 
+
 
 def milliwatt_to_nanowatt(_in):
     return 1e+6*_in
-#    1           1000
 def microwatt_to_nanowatt(_in):
     return 1e+3*_in
-#    1             1
 def nanowatt_to_nanowatt(_in):
     return 1e+0*_in 
+def picowatt_to_nanowatt(_in):
+    return 1e-3*_in 
+
 
 #     1          1000
 def milliwatt_to_microwatt(_in):
@@ -129,6 +139,9 @@ def microwatt_to_microwatt(_in):
     return 1e+0*_in
 def nanowatt_to_microwatt(_in):
     return 1e-3*_in 
+def picowatt_to_microwatt(_in):
+    return 1e-6*_in 
+
 
 def milliwatt_to_milliwatt(_in):
     return 1e+0*_in
@@ -136,18 +149,11 @@ def microwatt_to_milliwatt(_in):
     return 1e-3*_in
 def nanowatt_to_milliwatt(_in):
     return 1e-6*_in 
+def picowatt_to_milliwatt(_in):
+    return 1e-9*_in 
 
 
 
-def milliwatt_to_nano_watt(mw_in):
-    return 1e-6*mw_in
-def microwatt_to_nano_watt(uw_in):
-    return 1e-3 * uw_in
-
-def milliwatt_to_nano_watt(mw_in):
-    return 1e-6*mw_in
-def microwatt_to_nano_watt(uw_in):
-    return 1e-3 * uw_in
 
 
 
@@ -282,8 +288,10 @@ def print_conversion_table(dBm_in):
     b = milliwatt_to_microwatt(a)
 
     c = milliwatt_to_nanowatt(a)
+    
+    d = milliwatt_to_picowatt(a)
 
-    print ("%d (dBm) |  %f (mw)  |  %3.7f (uw)  |  %3.7f (nw)" %(dBm_in,a,b,c))
+    print ("%d (dBm) |  %f (mw)  |  %3.7f (uw)  |  %3.7f (nw)  | %3.7f (pw) |" %(dBm_in,a,b,c,d))
     return
 
 def gen_color_range(in_dBm, in_multiplier):
