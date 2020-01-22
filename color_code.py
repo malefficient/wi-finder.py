@@ -137,41 +137,8 @@ def compute_signal_color(mag, m_max, m_min):
     return C
 
 
-### dBm_to_ArrRSSI(in, ref=-75) (dBm to Arrbitrary RSSI)
-### return scalar value expressing input in terms of reference value.
-
-### dBm_to_ArrRSSI(-55, -75) =  100.0
-### dBm_to_ArrRSSI(-62, -75)    20.0
-### dBm_to_ArrRSSI(-65, -75) =   10.0
-### dBm_to_ArrRSSI(-75, -75) =    1.0
-### dBm_to_ArrRSSI(-85, -75) =  -10.0
-### dBm_to_ArrRSSI(-95, -85) = -100.0
-
-#Diverging color scheme:
-###   (#################   ref   #####################)
-
-#color codes will end up being /logarithmic/ of deltas. Otherwise:
-### (dBm_to_ArrRSSI(-65, -75)) = 10       (ref) ########## (10)
-### (dBm_to_ArrRSSI(-62, -75)) ~ 20       (ref) ########## (10) ########## (20) ########## (30) ########## (40) ....
-### (dBm_to_ArrRSSI(-59, -75)) ~
-# What we want. (Or at least, the best we can do as human beings with limited capacity for scale is:)
-### (dBm_to_ArrRSSI(-65, -75)) = 10       (ref) # (1)
-### (dBm_to_ArrRSSI(-55, -75)) = 100      (ref) ## (2)
-
-#   Q: What is a 'human' sized chunk of dBm window? 
-#  Or: What is a human sized linear scale that we can express 
-#
-#    Lets say a slider bar or '20' hashes to the right.
-
-## delta = 10, 
-## dBm_to_ArrRSSI(-55, -75)        # =  100.0  // (delta = 20)
-## ArrRSSI_to_dBm(100) = 20
-## ArrRSSI_to_dBm(10)  = 10
-## ArrRSSI_to_dBm(1)   = 0
-## ArrRSSI_to_dBM(0.1) = -10
-## ArrRSSI_to_dBm(0.001) = -20
-   
-#### ArrRSSI (Arrrbitrary-RSSI) is a unit defined by the following convserions
+#### ArrRSSI (Arrrbitrary-RSSI) is a unit I toyed with before setting on micro-watts
+##   It is defined  by the following convserions
 ## ArrRSSI_to_dBm(100) = 20      dBm_toArrRSSI(20) = 100
 ## ArrRSSI_to_dBm(10)  = 10      dBm_toArrRSSI(10) = 10
 ## ArrRSSI_to_dBm(1)   = 0       dBm_toArrRSSI(0)  = 1
@@ -180,40 +147,7 @@ def compute_signal_color(mag, m_max, m_min):
 
 
 
-def ArrRSSI_to_dBm(arrRSSI):
-    
-    if (arrRSSI < 0.000001) and (arrRSSI > -0.000001): #Special case: 0
-        #print("#### ArrRSSI_to_dBm:(%d)~~(0)   = (1) (special case)" % (arrRSSI))
-        return 1
-    
-    if (arrRSSI < 0.000001):  #Special case: negative argument.  return 1/ret.
-        ret =  math.log(-1*arrRSSI, 10) * 10.0
-        #print("#### ArrRSSI_to_dBm:(%d) = %3.2f" % (arrRSSI, -1 * ret))
-        return -1 * ret
-    else:
-        ret =  math.log(arrRSSI, 10) * 10.0
-        #print("#### ArrRSSI_to_dBm:(%d)=%3.2f " % (arrRSSI, ret))
-        return ret
 
-
-def dBm_to_ArrRSSI(sig, ref):
-    return_negative = False
-    delta =  (-1 * ref) - (-1 * sig) 
-    if (delta < 0.00000001) and (delta > -0.00000001):  #special case: 0 dBm delta
-        #print("#### dBm_toArrRSSI:(%d, %d)  :: special case (0). Returning 1  " % (sig, ref))      
-        return 1 #
-    if (delta < 0): #special case, negative
-        return_negative = True
-        delta *= -1.0
-
-    x = delta / 10
-    ret =  math.pow(10,x)
-    if (return_negative):
-        #print("#### dBm_toArrRSSI:(%d, %d)  :: delta = %d  x = %d, ret = 10^x :: %3.2f" % (sig, ref, delta, x, -1*ret))
-        return (-1 * ret)
-    else:
-        #print("#### dBm_toArrRSSI:(%d, %d)  :: delta = %d  x = %d, ret = 10^x :: %3.2f" % (sig, ref, delta, x, ret))
-        return ret 
 
 def dBm_to_micro_watt(sig):
     return_negative = False
@@ -295,34 +229,29 @@ def test_x_factor(in_dBm, multiplier):
     y = in_dBm
 
     twenty_x_ret_scale=[]
-    if (multiplier > 0):
-        while ( y < 0):
-            x = solve_for_x_factor(y, multiplier)
-            y = y * x
-            twenty_x_ret_scale.append( (y, 1/x))
-    return
-    #delta_dbm_l = []
-    #for idx in range(0, len(twenty_x_ret_scale) - 1):
-    #    delta_dbl_l[idx] = twenty_x_ret_scale[idx + 1] - twenty_x_ret_scale[idx]
-
+    delta_dbm_l = []
+   
+    while ( y < 0):
+        x = solve_for_x_factor(y, multiplier)
+        y = y * x
+        twenty_x_ret_scale.append( (y))
+      
+    
     f=' {:}\n'*len(twenty_x_ret_scale)
     s=f.format(*twenty_x_ret_scale)
     print("     %s" % (s))
-    #print("--- in more english ---")
-    #for idx in range(1, len(twenty_x_ret_scale)):
-    #    print(" %3.2 dBm times %d = %3.7f dBm" % (twenty_x_ret_scale[idx - 1][0], multipler, delta_dbm_l[idx]))
-
-    #print("   stepping up from %d dBm by linear multiplier of %d" % (in_dBm, multiplier))
-    #print("   Delta_Dbm(%d) = %3.7f" % (in_dBm, multiplier))
+    print("--- in more english ---")
+    print("   stepping up from %d dBm by linear multiplier of %d" % (in_dBm, multiplier))
     
-    return
+    #print("%3.7s" % (twenty_x_ret_scale))
+    #return
 
 def main():
     max=-55
     min=-75
     curr=-55
     
-    test_x_factor(-120,20 )
+    test_x_factor(-82, 20 )
     return
     x = solve_for_x_factor(-67, 20)
     print("%s dBm = ")
