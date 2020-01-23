@@ -143,19 +143,37 @@ def microwatt_to_dBm_test(mw_l):
     s=f.format(*synthesized_dBm_l)
     print("#### dBm out       : [%s]" % (s))
 
-def solve_for_x_factor(dBm_in, multiplier=20):
-    microwatt_in=dBm_to_micro_watt(dBm_in)
-    microwatt_in_20 = multiplier * microwatt_in
-    dBm_out = micro_watt_to_dBm(microwatt_in_20)
-    print("#### Solving for x-factor(%s, %d)" % (dBm_in, multiplier))
-    print("    dBm_in: (%s) -> microwatts: (%s)" %(dBm_in, microwatt_in))
-    print("    microwatts_in: (%s) times %d =  %s" %(microwatt_in, multiplier, microwatt_in_20))
-    print("    %s microwatts  -> dBm %s" % ( microwatt_in_20, dBm_out))
-    print("     %d times %s dBm = %s dBm " % (multiplier, dBm_in, dBm_out))
-    x = dBm_out / dBm_in
-    print("    'Cuz that would make our X-Factor %s" % (x))
-    return x
+
+def dBm_as_percent(dBm_a, dBm_b):
+    """ Express dBm_a as percentage of dBm_b"""
+    milliwatt_a=dBm_to_milliwatt(dBm_a)
+    milliwatt_b=dBm_to_milliwatt(dBm_b)
+    return 100.0 * (milliwatt_a / milliwatt_b)
+
+def dBm_divide_by_x(dBm_in, _x):
+    return (dBm_multiply(dBm_in, (1/_x)))
+
+def x_times_dBm(dBm_in, _x):
+    """ Multiply dBm_in by scalar value. Result returned in dBm""" #The entire reason this is a function is because we cant just multiply dBm and get actual results.
+    milliwatt_in=dBm_to_milliwatt(dBm_in)
+    milliwatt_in_20 = _x * milliwatt_in
+    dBm_out = milliwatt_to_dBm(milliwatt_in_20)
+    print("#### multiply  (%2d dBm) times (x) %d = %3.2f" % (dBm_in, _x, dBm_out))
+    return dBm_out
+
+    #print("    dBm_in: (%s) -> milliwatts: (%s)" %(dBm_in, milliwatt_in))
+    #print("    miliwatts_in: (%s) times %d =  %s" %(milliwatt_in, multiplier, milliwatt_in_20))
+    #print("    %s milliwatts  -> dBm %s" % ( milliwatt_in_20, dBm_out))
+    #print("     %d times %s dBm = %s dBm " % (multiplier, dBm_in, dBm_out))
+    #x = dBm_out / dBm_in
+    #print("    'Old timey X-Factor %2.2f" % (x))
     
+def s_for_x_factor(dBm_in, multiplier):
+    x_dBm = x_times_dBm(dBm_in, multiplier)
+    ret_dBm = x_dBm /dBm_in
+    print("    'Cuz that would make our X-Factor %2.2f" % (ret_dBm))
+    return (x_dBm / dBm_in)
+
 def test_x_factor(in_dBm, multiplier):
     print("#### Test x factor: %3.2f, %d" % (in_dBm, multiplier))
     y = in_dBm
@@ -332,7 +350,7 @@ class Color_scale_class():
         print("####ret_percent: dBm(%3.1f)/dBm(%3.1f))" % (in_dBm, milliwatt_to_dBm(self.top_scale_in_milliwatts)))
         print("    ret_percent: %3.1f%%" % (ret_percent))
         return ret_percent
-        
+
     def __str__(self):
         ret_str =  ("ColorScale_(uW)  bottom:(%s)  (%s) top:(%s)" % (self.bottom_in_microwatts, self.microwatt_center, self.top_in_microwatts))
         ret_str += ("ColorScale_(dBm) bottom:(%s)  (%s) top:(%s)" % (self.bottom_in_dBm, self.dBm_center, self.top_in_dBm))
@@ -344,7 +362,11 @@ def main():
     
     C = Color_scale_class()
     C.init_center_scale(int(sys.argv[1]), int(sys.argv[2]))
-    d = C.ret_percent(int(sys.argv[1]) + 10)
+    d = x_times_dBm(int(sys.argv[1]),  int(sys.argv[2]))
+    e = s_for_x_factor(int(sys.argv[1]), 3)
+
+    #e = C.ret_percent(d)
+   
     #C.print_conversion_table(curr)
     return
     
@@ -355,8 +377,8 @@ def main():
     #print("%s" % (C))
     #gen_color_scale(-67, 20, 1)
     #return
-    test_x_factor(-82, 20 )
-    return
+    #test_x_factor(-82, 20 )
+    #return
     #x = solve_for_x_factor(-90, 18)
     return
     print("sys.argc = %d" % (len(sys.argv)))
