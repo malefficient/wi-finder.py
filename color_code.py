@@ -96,70 +96,13 @@ def compute_signal_color(mag, m_max, m_min):
 
 
 
-def dBm_to_microwatt_test(dBm_l):
-    microwatt_l=[]
-    synthesized_dBm_l=[]
-    for r in dBm_l:
-        microwatt_l.append(dBm_to_micro_watt(r))
-
-    f=' {:7.7f},'*len(dBm_l)
-    s=f.format(*dBm_l)
-    print("####          dBm in: [%s]" % (s))
-    s= f.format(*microwatt_l)
-
-    print("#### micro-watt_out : [%s]" % (s))
-    print("---------Flip side----------")
-    s= f.format(*microwatt_l)    
-    print("#### micro-watt_in : [%s]" % (s))
-    
-    for mw in microwatt_l:
-        synthesized_dBm_l.append(micro_watt_to_dBm(mw))
-
-    s=f.format(*synthesized_dBm_l)
-    print("#### dBm out       : [%s]" % (s))
-
-    return 0
-
-def microwatt_to_dBm_test(mw_l):
-    synthesized_dBm_l=[]
-    for m in mw_l:
-        synthesized_dBm_l.append(micro_watt_to_dBm(m))
-
-    f=' {:7.7f},'*len(mw_l)
-    s=f.format(*mw_l)
-    print("####          micro-watt in: [%s]" % (s))
-   
-    s= f.format(*synthesized_dBm_l)
-
-    print("#### dBm out          : [%s]" % (s))
-    return 0
-    print("---------Flip side----------")
-    s= f.format(*microwatt_l)    
-    print("#### micro-watt_in : [%s]" % (s))
-    
-    for mw in microwatt_l:
-        synthesized_dBm_l.append(micro_watt_to_dBm(mw))
-
-    s=f.format(*synthesized_dBm_l)
-    print("#### dBm out       : [%s]" % (s))
 
 
-def dBm_as_percent(dBm_a, dBm_b):
-    """ Express dBm_a as percentage of dBm_b"""
-    milliwatt_a=dBm_to_milliwatt(dBm_a)
-    milliwatt_b=dBm_to_milliwatt(dBm_b)
-    return 100.0 * (milliwatt_a / milliwatt_b)
 
-def dBm_divide_by_x(dBm_in, _x):
-    return (dBm_multiply(dBm_in, (1/_x)))
 
-def x_times_dBm(dBm_in, _x):
-    """ Multiply dBm_in by scalar value. Result returned in dBm""" #The entire reason this is a function is because we cant just multiply dBm and get actual results.
-    milliwatt_in=dBm_to_milliwatt(dBm_in)
-    milliwatt_in_times_x = _x * milliwatt_in
-    dBm_out = milliwatt_to_dBm(milliwatt_in_times_x)
-    print("#### multiply  (%2d dBm) times (x) %d = %3.2f" % (dBm_in, _x, dBm_out))
-    return dBm_out
+
+
+
 
     #print("    dBm_in: (%s) -> milliwatts: (%s)" %(dBm_in, milliwatt_in))
     #print("    miliwatts_in: (%s) times %d =  %s" %(milliwatt_in, multiplier, milliwatt_in_20))
