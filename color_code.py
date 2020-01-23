@@ -1,8 +1,9 @@
-import math
+
 import sys
 import sty
 import random
 
+from math_dbm_util import *
 class ColorClassW():
     """Class that can convert between different color formats.
        Internally stored as a floats between 0.0 and 1.0 of 4 elements (alpha, blue, green, red)"""
@@ -93,105 +94,7 @@ def compute_signal_color(mag, m_max, m_min):
 
 # Micro-watt to dBm/ dBm_to_micro-watt: self-describing
 
-# | milliwatt (mW) | microwatt (uW) | nanowatt (nW)   |
-# |  1.0           | 1,000 (1e+3)   |  1000000 (1e+6) |
-# |  0.001 (1e-3)   1.0             |  1000    (1e+3) | 
-# |  1e-6       | 1000           | 1.0        | 
 
-#For example, 1.314E+1  means  1.314 * 10  which is 13.14.
-
-def milliwatt_to_picowatt(_in):
-    return 1e+9*_in
-def microwatt_to_picowatt(_in):
-    return 1e+6*_in
-def nanowatt_to_picowatt(_in):
-    return 1e+3*_in 
-def picowatt_to_picowatt(_in):
-    return 1e+0*_in 
-
-
-def milliwatt_to_nanowatt(_in):
-    return 1e+6*_in
-def microwatt_to_nanowatt(_in):
-    return 1e+3*_in
-def nanowatt_to_nanowatt(_in):
-    return 1e+0*_in 
-def picowatt_to_nanowatt(_in):
-    return 1e-3*_in 
-
-
-#     1          1000
-def milliwatt_to_microwatt(_in):
-    return 1e+3*_in
-def microwatt_to_microwatt(_in):
-    return 1e+0*_in
-def nanowatt_to_microwatt(_in):
-    return 1e-3*_in 
-def picowatt_to_microwatt(_in):
-    return 1e-6*_in 
-
-
-def milliwatt_to_milliwatt(_in):
-    return 1e+0*_in
-def microwatt_to_milliwatt(_in):
-    return 1e-3*_in
-def nanowatt_to_milliwatt(_in):
-    return 1e-6*_in 
-def picowatt_to_milliwatt(_in):
-    return 1e-9*_in 
-
-#Note: In future revisions I would like to do the initial from dBm -> picoWatts using fixed precision math. 
-#      Initializing the other _watts as multiple of picowatts to minimize / centraliz floating point conversion s
-#      For now, this is what I got.
-
-## YYY: These arent right.
-def dBm_to_xxx_watt(sig):
-    x = sig / 10
-    ret =  math.pow(10,x+3)
-    print("dBm_to_xxx_watt(%d) = %s" % (sig, ret))
-    return ret 
-   
-def xxx_watt_to_dBm(_in):
-    if (_in < 0.00000001) and (_in > -0.00000001):
-        print("xxx_watt (shouldbe milli) _to_dBm special case: passed ~0.0. Returning 1")
-        return 1
-    ret =  math.log(float(_in), 10) * 10.0  - 30
-    input("xxx_(milli?)_watt_to_dBm(%d) = %s" %(_in, ret))
-    return ret
-
-
-def dBm_to_milliwatt(sig):
-    x = sig / 10
-    ret =  math.pow(10,x+3)
-    print("dBm_to_microwatt(%d) = %s" % (sig, ret))
-    return ret 
-
-def milliwatt_to_dBm(mw_in):
-    if (mw_in < 0.00000001) and (mw_in > -0.00000001):
-        print("microwatt_to_dBm special case: passed ~0.0. Returning 1")
-        return 1
-    ret =  math.log(float(mw_in), 10) * 10.0  - 30
-    return ret
-
-
-
-
-
-
-
-
-# def dBm_to_nano_watt(sig):
-#     x = sig / 1000
-#     ret =  math.pow(10,x+3)
-#     print("dBm_to_nanowatt(%d) = %s" % (sig, ret))
-#     return ret 
-# # almost_micro-watt to dBm/ dBm_to_almost_micro-watt: There is no SI unit defined for this 
-# def nano_watt_to_dBm(mw_in):
-#     if (mw_in < 0.00000001) and (mw_in > -0.00000001):
-#         print("nanowatt_to_dBm special case: passed ~0.0. Returning 1")
-#         return 1
-#     ret =  math.log(float(mw_in), 10) * 1000.0  - 30
-#     return ret
 
 def dBm_to_microwatt_test(dBm_l):
     microwatt_l=[]
@@ -313,10 +216,6 @@ def print_conversion_table(dBm_in):
 
     print ("%d (dBm) |  %f (mw)  |  %3.7f (uw)  |  %3.7f (nw)  | %3.7f (pw) |" %(dBm_in,a,b,c,d))
 
-    print("    xxx_watt test case.")
-    x = dBm_to_xxx_watt(dBm_in)
- 
-    print("    %d dBm in XXX_watts directly  to %9f " % (dBm_in,x))
 
     return
 
@@ -324,8 +223,7 @@ def gen_color_range(in_dBm, in_multiplier):
     print("#### gen_color range(%d, %d)" % (in_dBm, in_multiplier))
    
     uW_in=dBm_to_micro_watt(in_dBm)
-    microwatt_in_times_x = in_multiplier * uW_in
-    dBm_max = micro_watt_to_dBm(microwatt_in_times_x)
+    dBm_max = micro_wattz_to_dBm(microwatt_in_times_x)
 
     #in_uW=dBm_to_micro_watt(in_dBm)
     microwatt_in_divided_by_x = (1/in_multiplier) * uW_in
@@ -369,30 +267,63 @@ class Color_scale_class():
     ###  ---  ###
     def __init__(self, pallete_name="default"):
         self.color_pallete = pallete_name
-    
-    def init_center_scale(self, dBm_in, _X=20):
-        """ Scale will be defined as self.center_scale == dBm_in == 1X. top and bottom will be +/- center times X)"""  
-        
-        self.dBm_center = dBm_in
+    def _initialize_units_table(self, _mw_bottom, _mw_center, _mw_top):
+        print("#### Conversion table")
+        a = _mw_bottom
+        b = milliwatt_to_microwatt(a)
+        c = milliwatt_to_nanowatt(a)
+        d = milliwatt_to_picowatt(a)
+        self.bottom_scale_in_milliwatts  = a
+        self.bottom_scale_in_microwatts  = b
+        self.bottom_scale_in_nanowatts   = c
+        self.bottom_scale_in_picowatts   = d
+        self.bottom_scale_in_dBm = milliwatt_to_dBm(a)
 
-        self.center_scale_in_picowatts = dBm_to_pico_watt(self.dBm_center)
-        self.top_in_picowatts = _X * self.picowatt_center
-        self.bottom_in_picowatts = (1.0 / _X) * self.center_scale_in_picowatts
-        
-        self.top_in_dBm    = picowatt_to_dBm(self.top_in_picowatts)
-        self.bottom_in_dBm = picowatt_to_dBm(self.bottom_in_picowatts)
+        a = _mw_center
+        b = milliwatt_to_microwatt(a)
+        c = milliwatt_to_nanowatt(a)
+        d = milliwatt_to_picowatt(a)
+        self.center_scale_in_milliwatts  = a
+        self.center_scale_in_microwatts  = b
+        self.center_scale_in_nanowatts   = c
+        self.center_scale_in_picowatts   = d
+        self.center_scale_in_dBm = milliwatt_to_dBm(a)
+
+        a = _mw_top
+        b = milliwatt_to_microwatt(a)
+        c = milliwatt_to_nanowatt(a)
+        d = milliwatt_to_picowatt(a)
+        self.top_scale_in_milliwatts  = a
+        self.top_scale_in_microwatts  = b
+        self.top_scale_in_nanowatts   = c
+        self.top_scale_in_picowatts   = d
+        self.top_scale_in_dBm = milliwatt_to_dBm(a)
+
+    #print ("%d (dBm) |  %f (mw)  |  %3.7f (uw)  |  %3.7f (nw)  | %3.7f (pw) |" %(dBm_in,a,b,c,d))
+    def init_center_scale(self, dBm_in, multiplier=20):
+        """ Scale will be defined as self.center_scale == dBm_in == 1X. top and bottom will be +/- center times X)"""  
+          
+        _a = dBm_to_milliwatt(dBm_in)
+        _t =  multiplier * _a
+        _b = (1/multiplier) * _a
+        self._initialize_units_table(_b, _a, _t)
         # Todo: follow up with other units
         
-        print("#### Color_scale_class: Solving for scale(%s, %d)" % (dBm_in, multiplier))
-        print("    dBm_in: (%s) -> microwatts: (%s)" %(self.dBm_center, self.microwatt_center))
-        print("    microwatts_center: (%s) times %d =  %s" %(self.microwatt_center, multiplier, self.top_in_microwatts))
-        print("    microwatts_top:(%s) dBm_top:(%s)" % ( self.top_in_microwatts, self.top_in_dBm))
-        print("    dBm_top:(%s) dBm_bottom:(%s)" % ( self.bottom_in_microwatts, self.bottom_in_dBm))
+        print("#### Color_scale_class: init_center_scalee(%s, %d)" % (dBm_in, multiplier))
+        print("    Bottom:  (%s)dBm -> milliwatts: (%8s) -> microwatts:(%8s ->nanowatts:(%8s) ->picowatts:(%8s))" %(self.bottom_scale_in_dBm, self.bottom_scale_in_milliwatts, self.bottom_scale_in_microwatts, self.bottom_scale_in_nanowatts, self.bottom_scale_in_picowatts))
 
-        print("##### Color scale initalized")
-        print("    (uW)  bottom:(%s)      center:(%s)     top:(%s)" % (self.bottom_in_microwatts, self.microwatt_center, self.top_in_microwatts))
-        print("    (dBm) bottom:(%s)      center:(%s)     top:(%s)" % (self.bottom_in_dBm, self.dBm_center, self.top_in_dBm))
-        print("#### End color scale init")        #print("    'Cuz that would make our ZZZ-Factor %s" % (x))
+        print("    Center:  (%s)dBm -> milliwatts: (%8s) -> microwatts:(%8s ->nanowatts:(%8s) ->picowatts:(%8s))" %(self.center_scale_in_dBm, self.center_scale_in_milliwatts, self.center_scale_in_microwatts,self.center_scale_in_nanowatts, self.center_scale_in_picowatts))
+
+        print("    Top:  (%s)dBm -> milliwatts: (%8s) -> microwatts:(%8s ->nanowatts:(%8s) ->picowatts:(%8s))" %(self.top_scale_in_dBm, self.top_scale_in_milliwatts, self.top_scale_in_microwatts, self.top_scale_in_nanowatts, self.top_scale_in_picowatts))
+        
+
+        # print("    microwatts_top:(%s) dBm_top:(%s)" % ( self.top_in_microwatts, self.top_in_dBm))
+        # print("    dBm_top:(%s) dBm_bottom:(%s)" % ( self.bottom_in_microwatts, self.bottom_in_dBm))
+
+        # print("##### Color scale initalized")
+        # print("    (uW)  bottom:(%s)      center:(%s)     top:(%s)" % (self.bottom_in_microwatts, self.microwatt_center, self.top_in_microwatts))
+        # print("    (dBm) bottom:(%s)      center:(%s)     top:(%s)" % (self.bottom_in_dBm, self.dBm_center, self.top_in_dBm))
+        # print("#### End color scale init")        #print("    'Cuz that would make our ZZZ-Factor %s" % (x))
         
         return
     def ret_scale_Rrr(self, in_dBm):
@@ -424,11 +355,12 @@ def main():
     max=-55
     min=-75
     curr=-75
-    print_conversion_table(curr)
+    
+    C = Color_scale_class()
+    C.init_center_scale(int(sys.argv[1]), int(sys.argv[2]))
+    #C.print_conversion_table(curr)
     return
-    #A = dBm_to_micro_watt(curr)
-    #B = microwatt_to_nanowatt(A)
-
+    
     print("%03d dBm is %07.8f micro_watts, or %7.8f nano-watts" % (curr, A, B))
     return
     #C = Color_scale_class()
