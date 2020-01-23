@@ -3,7 +3,7 @@ import sys
 import sty
 import random
 
-from math_dbm_util import *
+from dbm_unit_conversion import *
 class ColorClassW():
     """Class that can convert between different color formats.
        Internally stored as a floats between 0.0 and 1.0 of 4 elements (alpha, blue, green, red)"""
@@ -156,8 +156,8 @@ def dBm_divide_by_x(dBm_in, _x):
 def x_times_dBm(dBm_in, _x):
     """ Multiply dBm_in by scalar value. Result returned in dBm""" #The entire reason this is a function is because we cant just multiply dBm and get actual results.
     milliwatt_in=dBm_to_milliwatt(dBm_in)
-    milliwatt_in_20 = _x * milliwatt_in
-    dBm_out = milliwatt_to_dBm(milliwatt_in_20)
+    milliwatt_in_times_x = _x * milliwatt_in
+    dBm_out = milliwatt_to_dBm(milliwatt_in_times_x)
     print("#### multiply  (%2d dBm) times (x) %d = %3.2f" % (dBm_in, _x, dBm_out))
     return dBm_out
 
