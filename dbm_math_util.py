@@ -9,8 +9,8 @@ def dBm_as_percent(dBm_a, dBm_b):
 def dBm_divide_by_x(dBm_in, _x):
     return (dBm_multiply(dBm_in, (1/_x)))
 
-def x_times_dBm(dBm_in, _x):
-    """ Multiply dBm_in by scalar value. Result returned in dBm""" #The entire reason this is a function is because we cant just multiply dBm and get actual results.
+def dBm_scale_by(dBm_in, _x):
+    """ Scale dBm_in linearly by factor _x. Return as dBm. (this does *not* just multiply dBm by x. think about it)""" #The entire reason this is a function is because we cant just multiply dBm and get actual results.
     milliwatt_in=dBm_to_milliwatt(dBm_in)
     milliwatt_in_times_x = _x * milliwatt_in
     dBm_out = milliwatt_to_dBm(milliwatt_in_times_x)
@@ -40,9 +40,10 @@ def dbm_times_table(center=0,  in_range=5, stepsize=1):
         c_line+=("\n")
     print("%s" % (c_line))
     return
+
 def test_dbm_math(a,b,c):
     dbm_times_table()
-    d = x_times_dBm(int(sys.argv[1]),  int(sys.argv[2]))
+    d = dBm_scale_by(int(sys.argv[1]),  int(sys.argv[2]))
     return
     e = s_for_x_factor(int(sys.argv[1]), 3)
 
