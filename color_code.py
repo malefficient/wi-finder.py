@@ -299,7 +299,6 @@ class Color_scale_class():
         self.top_scale_in_picowatts   = d
         self.top_scale_in_dBm = milliwatt_to_dBm(a)
 
-    #print ("%d (dBm) |  %f (mw)  |  %3.7f (uw)  |  %3.7f (nw)  | %3.7f (pw) |" %(dBm_in,a,b,c,d))
     def init_center_scale(self, dBm_in, multiplier=20):
         """ Scale will be defined as self.center_scale == dBm_in == 1X. top and bottom will be +/- center times X)"""  
           
@@ -310,43 +309,30 @@ class Color_scale_class():
         # Todo: follow up with other units
         
         print("#### Color_scale_class: init_center_scalee(%s, %d)" % (dBm_in, multiplier))
-        print("    Bottom:  (%s)dBm -> milliwatts: (%8s) -> microwatts:(%8s ->nanowatts:(%8s) ->picowatts:(%8s))" %(self.bottom_scale_in_dBm, self.bottom_scale_in_milliwatts, self.bottom_scale_in_microwatts, self.bottom_scale_in_nanowatts, self.bottom_scale_in_picowatts))
-
-        print("    Center:  (%s)dBm -> milliwatts: (%8s) -> microwatts:(%8s ->nanowatts:(%8s) ->picowatts:(%8s))" %(self.center_scale_in_dBm, self.center_scale_in_milliwatts, self.center_scale_in_microwatts,self.center_scale_in_nanowatts, self.center_scale_in_picowatts))
-
-        print("    Top:  (%s)dBm -> milliwatts: (%8s) -> microwatts:(%8s ->nanowatts:(%8s) ->picowatts:(%8s))" %(self.top_scale_in_dBm, self.top_scale_in_milliwatts, self.top_scale_in_microwatts, self.top_scale_in_nanowatts, self.top_scale_in_picowatts))
         
-
-        # print("    microwatts_top:(%s) dBm_top:(%s)" % ( self.top_in_microwatts, self.top_in_dBm))
-        # print("    dBm_top:(%s) dBm_bottom:(%s)" % ( self.bottom_in_microwatts, self.bottom_in_dBm))
-
-        # print("##### Color scale initalized")
-        # print("    (uW)  bottom:(%s)      center:(%s)     top:(%s)" % (self.bottom_in_microwatts, self.microwatt_center, self.top_in_microwatts))
-        # print("    (dBm) bottom:(%s)      center:(%s)     top:(%s)" % (self.bottom_in_dBm, self.dBm_center, self.top_in_dBm))
-        # print("#### End color scale init")        #print("    'Cuz that would make our ZZZ-Factor %s" % (x))
-        
+        ## f_ext_fmt="{:}  {:} dBm -> milliwatts:{:.3f} -> microwatts:{:.3f} ->nanowatts:{:.3f} ->picowatts:{:.3f}"
+        ## s=f_ext_fmt.format( *("Bottomsies", int(self.bottom_scale_in_dBm), self.bottom_scale_in_milliwatts, self.bottom_scale_in_microwatts, self.bottom_scale_in_nanowatts, self.bottom_scale_in_picowatts))
+        ## s=f_ext_fmt.format( *("Centerdoo", int(self.center_scale_in_dBm), self.center_scale_in_milliwatts, self.center_scale_in_microwatts, self.center_scale_in_nanowatts, self.center_scale_in_picowatts))
+        ## s=f_ext_fmt.format( *("Toppletop", int(self.top_scale_in_dBm), self.top_scale_in_milliwatts, self.top_scale_in_microwatts, self.top_scale_in_nanowatts, self.top_scale_in_picowatts))
+        f_simple_fmt="{:}  {:} dBm -> milliwatts:{:.9f}"
+        s=f_simple_fmt.format( *("Bottom_scale", int(self.bottom_scale_in_dBm), self.bottom_scale_in_milliwatts))
+        print("%s" % (s))
+        s=f_simple_fmt.format( *("center_scale", int(self.center_scale_in_dBm), self.center_scale_in_milliwatts))
+        print("%s" % (s))
+        s=f_simple_fmt.format( *("   top_scale", int(self.top_scale_in_dBm), self.top_scale_in_milliwatts))
+        print("%s" % (s))
         return
-    def ret_scale_Rrr(self, in_dBm):
-        """ return scalar factor such that ret_val * input == self.center""" 
-        curr_in_
-    ##
-    # I.e., if scale.bottom        =  -16dBm (~20 uW) 
-    #          scale.top           =  -4dBm (~400 uW)
-    # then     ret_percent (300 uW) =  (300) / (scale.top_in_uW - scale.bottom_in_uW) == (300) / (400 -20) == 300 / (380) ~= 79%
-    # similarly scale.bottom = -75 (3.16227e-05 uW), 
-    #           scale.top    = -65 ()
-    #           ret_percent(-68 dBm) 
-    #           ret_percent(0.000126191 uW)
-    #           
-    #
-    #           ret_percent(5 uW) = 5 / (380) = 1%
-    ##          ret_percent (20 uW) = 0.0 
-    ##          ret_percent(190 uW) = 50.0
-    
-    def ret_percent(in_dBm):
+
+            
+    def ret_percent(self, in_dBm):
         """ return a value between 0-100 that represents the input parameters location ranging from self.bottom to self.top """
         # I.e. set
-
+        a = dBm_to_milliwatt(in_dBm)
+        ret_percent = (a/self.top_scale_in_milliwatts) * 100.0      
+        print("####ret_percent: dBm(%3.1f)/dBm(%3.1f))" % (in_dBm, milliwatt_to_dBm(self.top_scale_in_milliwatts)))
+        print("    ret_percent: %3.1f%%" % (ret_percent))
+        return ret_percent
+        
     def __str__(self):
         ret_str =  ("ColorScale_(uW)  bottom:(%s)  (%s) top:(%s)" % (self.bottom_in_microwatts, self.microwatt_center, self.top_in_microwatts))
         ret_str += ("ColorScale_(dBm) bottom:(%s)  (%s) top:(%s)" % (self.bottom_in_dBm, self.dBm_center, self.top_in_dBm))
@@ -358,6 +344,7 @@ def main():
     
     C = Color_scale_class()
     C.init_center_scale(int(sys.argv[1]), int(sys.argv[2]))
+    d = C.ret_percent(int(sys.argv[1]) + 10)
     #C.print_conversion_table(curr)
     return
     
