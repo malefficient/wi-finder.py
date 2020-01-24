@@ -6,3 +6,4 @@
 *.swp
 *.ipynb
 .gitignore
+wi-finder.code-workspace
