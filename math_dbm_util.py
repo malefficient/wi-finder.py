@@ -1,5 +1,6 @@
 import math
 import sys
+from dbm_unit_conversion import dBm_to_milliwatt, milliwatt_to_dBm
 ########### milli/micro/nano/pico watt conversion table#
 # | milliwatt (mW) | microwatt (uW) | nanowatt (nW)    |
 # |  1.0           | 1,000 (1e+3)   |  1000000 (1e+6)  |
@@ -65,6 +66,7 @@ def print_multiplication_table(in_dBm, multiplier):
     ##f=' {:}\n'*len(twenty_x_ret_scale)
     ##s=f.format(*twenty_x_ret_scale)
     ##print("     %s" % (s))
+    # JC start here
     print("--- in more english ---")
     print("   stepping up from %d dBm by linear multiplier of %d" % (in_dBm, multiplier))
     
