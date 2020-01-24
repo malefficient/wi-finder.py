@@ -55,27 +55,62 @@ def dBm_to_milliwatt_test(dBm_l):
 
     return 0
 
-### TODO: research storing results into named tuple
+
+def solve_for_x_factor(dBm_in, multiplier=20):
+    microwatt_in=dBm_to_micro_watt(dBm_in)
+    microwatt_in_20 = multiplier * microwatt_in
+    dBm_out = micro_watt_to_dBm(microwatt_in_20)
+    #print("#### Solving for x-factor(%s, %d)" % (dBm_in, multiplier))
+    #print("    dBm_in: (%s) -> microwatts: (%s)" %(dBm_in, microwatt_in))
+    #print("    microwatts_in: (%s) times %d =  %s" %(microwatt_in, multiplier, microwatt_in_20))
+    #print("    %s microwatts  -> dBm %s" % ( microwatt_in_20, dBm_out))
+    print("     %d times %s dBm = %s dBm " % (multiplier, dBm_in, dBm_out))
+    x = dBm_out / dBm_in
+    print("    'Cuz that would make our X-Factor %s" % (x))
+    return x
+
+
 def print_multiplication_table(in_dBm, multiplier):
     print("#### Generating multiplication table for: %3.2f, %d" % (in_dBm, multiplier))
 
     # Note the subtlety: the lval in this expression used to define a type.
-    Record = namedtuple('Record',['base_dBm','base_mw','multiplier','result_dBm', 'result_mw', 'dBm_delta', 'x_mw']) 
+    Record = namedtuple('Record',['base_dBm','base_mw','multiply_by', 'result_mw', 'result_dBm', 'scaled_mw_by', 'scaled_dBm_by']) 
 
     Results = [ Record(0,0,0,0,0,0,0)]
     y = in_dBm
     for i in range(1,10):  
         n = x_times_dBm(in_dBm, multiplier * i)
-        input("Que?")
-        delta_d = n - Results[-1].result_dBm
-        x_dbm = dBm_as_percent(Results[-1].result_dBm,n)
-        print("delta_d: %s" % (delta_d))
-        input("")
-        Results.append ( Record(in_dBm, dBm_to_milliwatt(in_dBm), i*multiplier,n, dBm_to_milliwatt(n), delta_d,x_dbm)  )
+        #input("Que?")
+        ## Tedious, but for testing store each field in record independently for print()
+        if ( True ):
+            base_dBm = in_dBm
+            base_mw = dBm_to_milliwatt(in_dBm)
+            multiply_by = i * multiplier
+            result_mw = dBm_to_milliwatt(n)
+            result_dBm = n
+            scaled_mw_by  = result_mw  / base_mw
+            scaled_dBm_by = result_dBm / base_dBm
+            New_rec = Record(base_dBm,base_mw,multiply_by, result_mw, result_dBm, scaled_mw_by, scaled_dBm_by)
+            Results.append ( New_rec  )
+            ## XXX: Serious question. interpetation of 'scaled_mw_by' is obvious. But wtf does 'scaled_dBm_by' .. mean? Mayhe its just a unnecessary computation
+
         y = n
-        print("  %d)  %s " % (i, Results[-1]))
-        input(" Que ")
+        #print("  %d)  %s " % (i, Results[-1]))
+        #input(" Que ")
     
+    input ("Trying to do some math on records[1] and [2]")
+    rec1 = Results[1]
+    rec2 = Results[2]
+    r1=rec1.result_dBm
+    r2=rec2.result_dBm
+    print("Rec1 result_dBm: %3.3f" % (rec1.result_dBm) )
+    print("Rec2 result_dBm: %3.3f" % (rec2.result_dBm) )
+    print("Rec2 is %3f (linear) percent Rec1" % (dBm_as_percent(r2,r1)) )
+    dbm_percent = ( r2 / r1 ) * 100.0
+    print("Rec2 is %3f (..logarithmic?) percent Rec1" % ( dbm_percent ))
+    
+    input("Print table returning early.. Pretty soon we will want output an actual table")
+    return
     ## JC TODO: replace format string, make this more useful
     ##f=' {:}\n'*len(twenty_x_ret_scale)
     ##s=f.format(*twenty_x_ret_scale)
