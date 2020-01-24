@@ -1,4 +1,8 @@
 *.pcap
+*.cap
+*.json
+.DS_Store
 *.pyc
 *.swp
 *.ipynb
+.gitignore
