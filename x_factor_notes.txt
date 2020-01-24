@@ -1,0 +1,23 @@
+## Linear vs logarithmic ratios.
+## The following example illustrates the result of multiplication of equivlaent amounts of energy mesured in dBm and mW
+
+# python3 ./math_dbm_util.py 10 3 
+
+10 dBm (10000mW) times 3 = (14.7dBm)  (3000mW) 
+10 dBm (10000mW) times 6 = (17.78dBm) (6000mW)
+----------------------------------------------
+6000mWa / 30000mW  =  2.00 = 200% (Linear)
+17.7dBm / 14.7 dBm =  1.20 = 120% (Logarithmic) 
+
+
+## 
+ python3 ./math_dbm_util.py 10 3 
+dBm_to_microwatt(10) = 10000.0
+dBm_to_microwatt(24) = 269999.9999999992
+Trying to do some math on records[1] and [2]
+Rec1 result_dBm: 14.771
+Rec2 result_dBm: 17.782
+dBm_to_microwatt(17) = 59999.999999999905
+dBm_to_microwatt(14) = 29999.99999999995
+Rec2 is 200.000000 (linear) percent Rec1
+Rec2 is 120.379505 (..logarithmic?) percent Rec1
