@@ -5,7 +5,23 @@
 ##
 ##
 
+    top_scale_in_dBm = None
+    top_scale_in_milliwatts = None
+    top_scale_in_microwatts = None
+    top_scale_in_nanowatts = None
+    top_scale_in_picowatts = None    
 
+    center_scale_in_dBm = None
+    center_scale_in_milliwatts = None
+    center_scale_in_microwatts = None
+    center_scale_in_nanowatts = None
+    center_scale_in_picowatts = None
+
+    bottom_scale_in_dBm = None
+    bottom_scale_in_milliwatts = None
+    bottom_scale_in_microwatts = None
+    bottom_scale_in_nanowatts = None
+    bottom_scale_in_picowatts = None
 
 if ('Lock_Quality' in R.present):
       header_list.append("Lock:%3d")
