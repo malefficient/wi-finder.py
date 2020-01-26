@@ -10,7 +10,7 @@ from dbm_unit_conversion import *
 class Energy_scale_class():
     """Handles scale / perspective on signal strengths """
     Initialized = False
-
+    descr=""
     top_scale_in_dBm = None
     top_scale_in_mw = None
     
@@ -60,6 +60,7 @@ class Energy_scale_class():
     def init_center_scale(self, dBm_in, multiplier=20):
         """ Scale will be defined as self.center_scale == dBm_in == 1X. top and bottom will be +/- center times X)"""  
         ### For now we assume a simple 1:1 mapping between num_slots:slot
+        self.descr = "Scaling algorithm 1: (initial) set center_scale"
         _cent = dBm_to_milliwatt(dBm_in)
         _top =  multiplier * _cent
         _btm = (1/multiplier) * _cent
@@ -68,6 +69,24 @@ class Energy_scale_class():
         
         print("#### Energy_scale_class: init_center_scale(%s, %d)" % (dBm_in, multiplier))
         return
+    def init_linear_scale2(self, dBm_in, multiplier=20):
+        """ Scale will be defined as self.center_scale == dBm_in == 1X. top and bottom will be +/- center times X)"""  
+        ### For now we assume a simple 1:1 mapping between num_slots:slot
+        self.descr = "Scaling algorithm 2: (slice_width = distance_in_mw(center,  center + 1 dBm). Scale out 20 x width in both directions"
+        # Todo: follow up with other units
+        
+        print("#### Energy_scale_class: init_linear_scale2(%s, %d)" % (dBm_in, multiplier))
+        return
+
+    def init_linear_scale3(self, _center_mw, _slice_width_mw, _slice_num=20):
+        """ Scale will be defined as self.center_scale == dBm_in == 1X. top and bottom will be +/- center times X)"""  
+        ### For now we assume a simple 1:1 mapping between num_slots:slot
+        self.descr = "Scaling algorithm 3: repeat multiplier times slot_size out in both directions"
+        # Todo: follow up with other units
+        
+        print("#### Energy_scale_class: init_linear_scale2(%s, %d)" % (dBm_in, multiplier))
+        return
+
 
     def process_input_dBm_ret_percent(self, in_dBm):
         """ returns a TBD named tuple that contains the results of input value in _T _B _D space"""
