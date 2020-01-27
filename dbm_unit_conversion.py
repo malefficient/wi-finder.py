@@ -7,6 +7,16 @@ import math
 # |  1e-6          | 1000           |  1.0             | 
 ########################################################
 
+
+def ret_stepsize_in_picow(dBm_in): #XXX Note: For testing purposes (like, interatively, this returns/works on picowatts, the most human friendly scale for our range)
+    a = milliwatt_to_picowatt(dBm_to_milliwatt(dBm_in))
+    b = milliwatt_to_picowatt(dBm_to_milliwatt(dBm_in + 1))
+    c = b - a
+    
+    debug_str="####dBm_step_width(%d):   %f(micro-w) - %f(micro-w) = %f(micro-w)= (%3.7fdBm)" % (dBm_in, b, a, c, milliwatt_to_dBm(microwatt_to_milliwatt(c)))
+    print ("%s" % (debug_str))
+    return c
+#    return  picowatt_to_picowatt(c)
 def milliwatt_to_picowatt(_in):
     return 1e+9*_in
 def microwatt_to_picowatt(_in):
