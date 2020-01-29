@@ -71,7 +71,7 @@ class Energy_scale_class():
         _btm = (1/multiplier) * _cent
         self._initialize_units_table(_btm, _cent, _top)
         print("#### Energy_scale_class: init_linear_scale2(%s, %d)" % (_center_dBm,multiplier))
-        print("%s" % (self.__str__()))
+        #print("%s" % (self.__str__()))
         return
 
     def process_input_dBm_ret_percent(self, in_dBm):
@@ -181,9 +181,7 @@ class Energy_scale_class():
         plus_3_x_str = X_line_str[:self.bot_span_in_hashmarks + three_x_in_hashmarks] + '|+3x' +  X_line_str[0+self.bot_span_in_hashmarks + three_x_in_hashmarks:] 
         ret_str += left_margin + plus_3_x_str
        
-        ret_str += "\n---------\n"
-        
-        ret_str += self.summary(width)
+        #ret_str += self.summary(width)
         return ret_str
 
 def main():
@@ -205,10 +203,10 @@ def main():
 
     C = Energy_scale_class()
     C.init_linear_scale(a, b, c)
-    #print(" %s " % (C))
+    print(" %s " % (C))
     #print(" %s " % (C.summary()))
 
-    C.process_input_dBm_ret_percent(  a + c)
+    #C.process_input_dBm_ret_percent(  a + c)
     #C.process_input_dBm_ret_percent(a + 0)
     #C.process_input_dBm_ret_percent(a - 3)
     return
