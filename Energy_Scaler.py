@@ -172,13 +172,14 @@ class Energy_scale_class():
       
         f="{:+2d}x"  ### Multiplier line of scale
         one_x_in_hashmarks= int(ceil(self.top_span_in_hashmarks / self.top_span_in_X))
+        three_x_in_hashmarks= int(ceil(3 * self.top_span_in_hashmarks / self.top_span_in_X))
         x_line_l= [ f.format(-1 * self.bot_span_in_X), ' ', f.format(1 * self.top_span_in_X)]
         space_length = int(floor(width/2))  - len(x_line_l[0])
         X_line_str = x_line_l[0] + space_length*' ' + x_line_l[1] + (space_length)*' ' + x_line_l[2] + '\n'
         
         #ret_str += left_margin+ X_line_str
-        plus_1_x_str = X_line_str[:self.bot_span_in_hashmarks + one_x_in_hashmarks] + '|+1x' +  X_line_str[0+self.bot_span_in_hashmarks + one_x_in_hashmarks:] 
-        ret_str += left_margin + plus_1_x_str
+        plus_3_x_str = X_line_str[:self.bot_span_in_hashmarks + three_x_in_hashmarks] + '|+3x' +  X_line_str[0+self.bot_span_in_hashmarks + three_x_in_hashmarks:] 
+        ret_str += left_margin + plus_3_x_str
        
         ret_str += "\n---------\n"
         
