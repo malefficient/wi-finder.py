@@ -57,7 +57,7 @@ def picowatt_to_milliwatt(_in):
 def dBm_to_milliwatt(sig):
     x = sig / 10
     ret =  math.pow(10,x+3)
-    print("dBm_to_microwatt(%d) = %s" % (sig, ret))
+    #print("dBm_to_microwatt(%d) = %s" % (sig, ret))
     return ret 
 
 def milliwatt_to_dBm(mw_in):
@@ -66,8 +66,6 @@ def milliwatt_to_dBm(mw_in):
         return 1
     ret =  math.log(float(mw_in), 10) * 10.0  - 30
     return ret
-
-
 
 
 
