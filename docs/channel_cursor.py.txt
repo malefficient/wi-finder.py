@@ -1,0 +1,48 @@
+# Channel 'Cursor' explained.
+
+
+When it comes to radio signals of any kind, human beings have a natural inclination to to simplify things as much as practical.
+*for 'things' == to 'A descriptin of the PHY layer with enough precision to successfuly demodulate information
+
+This tendency gives humans a convenient abstraction to work with. 
+1) "Hey Johnny, tune in to Q101.1 with madcow at 10:00 AM for your chance to win tickets to STP"
+2) "Be sure to stay tuned to WLS AM-890 to get the latest alternative-facts and disinformation from conservative pundit XYZ"
+
+Odds are that as a human steeped in linguistic context, had no trouble understanding what either example above is referring to. 
+(Which, for the record is)
+FM channel 101.1
+AM channel 890.
+
+In fact, in casual conversation simply saying "101.1" or "channel 890" would suffice.
+
+When use conversationaly in english, a 'channel' can be defined as a single-dimension variable.
+
+In the US and Canada, the VHF television band occupies frequencies between 54 and 216 MHz and the UHF band between 470 and 890 MHz. 
+In general, VHF channels are numbered 2 to 13 and UHF channels 14 to 51.
+
+For any given medium, it is much easier for humans to create a mechanism/naming convention to map channels to specific frequency and modulation types.
+"CBS Chicago on channel 2" -> 204Mhz (VHF)
+
+
+## Wi-Fi evolution and implicit channel variables.
+2.4 GHz (802.11b/g/n/ax) 
+Fourteen channels are designated in the 2.4 GHz range, spaced 5 MHz apart from each other except for a 12 MHz space before channel 14
+
+Channel, F0, Range,  width of band
+1, 2412, 2401-2423. : 22 MHz
+2, 2417, 2406-2428. : 22 MHz
+3, 2422, 2411-2433,   22
+..
+6, 2437, 2426-2448,   22
+11,2462, 2451-2473,   22
+-------Gap---------
+12 2467, 2456-2478.   22
+13 2472, 2461-02483
+14 2484, 2473-2495
+
+
+In 802.11b (DSSS)  2.4Ghz WLAN channels 1,6,11,14* are the only non-overlapping ones. Each 
+
+
+
+

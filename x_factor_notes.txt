@@ -1,6 +1,6 @@
 ## Linear vs logarithmic ratios.
 ## The following example illustrates the result of multiplication of equivlaent amounts of energy mesured in dBm and mW
-
+##
 # python3 ./math_dbm_util.py 10 3 
 
 10 dBm (10000mW) times 3 = (14.7dBm)  (3000mW) 

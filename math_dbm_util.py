@@ -12,14 +12,14 @@ from dbm_unit_conversion import dBm_to_milliwatt, milliwatt_to_dBm
 
 
 def dBm_as_percent(dBm_a, dBm_b):
-    """ Express dBm_a as percentage of dBm_b"""
+    """ Express dBm_a as percentage of dBm_b""" # XXX Bad. Bad idea. remove this soon. Should force users to convert units to mW for linear percent
     milliwatt_a=dBm_to_milliwatt(dBm_a)
     milliwatt_b=dBm_to_milliwatt(dBm_b)
     return 100.0 * (milliwatt_a / milliwatt_b)
 
 
 def mw_as_percent(milliwatt_a, milliwatt_b):
-    """ Express dBm_a as percentage of dBm_b"""
+    """ Express mw_a as percentage of dBmmw_b_b"""
     return 100.0 * (milliwatt_a / milliwatt_b)
 
 def x_times_dBm(dBm_in, _x):
@@ -122,25 +122,7 @@ def print_multiplication_table(in_dBm, multiplier):
     #print("%3.7s" % (twenty_x_ret_scale))
     #return
 
-def named_t_test():
-    # Python code to demonstrate namedtuple() and 
-    # Access by name, index and getattr() 
-    
-    
-    # Declaring namedtuple() 
-    # Note the subtlety: the lval in this expression used to define a type.
-    Record = namedtuple('Record',['multiplier','result_dBm','dBm_delta']) 
-    
-    # Adding values 
-    S = Student('Nandini','19','2541997') 
-    
-    # Access using index 
-    print ("The Student age using index is : ",end ="") 
-    print (S[1]) 
-    
-    # Access using name  
-    print ("The Student name using keyname is : ",end ="") 
-    print (S.name) 
+
     
 def main():
     a=-55
