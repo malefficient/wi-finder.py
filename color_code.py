@@ -62,9 +62,6 @@ class color_w():
         """Default to conole escape character """
         return str(self.sty_color());
 
-
-
-
 def compute_signal_color_from_ppi_viz(mag, m_max, m_min):
     """Takes in mag, m_max, m_min  in dB. returns a color scaled approriately"""
     intensity = compute_signal_intensity(mag, m_max, m_min)
@@ -83,6 +80,30 @@ def compute_signal_color_from_ppi_viz(mag, m_max, m_min):
     return C
 
 
+
+class parallell_color_scale():
+    S=None #S is for 'Scale'
+    def __init__(self, _s, _pal=None):
+        print("####parallell_color_scale:__init__()")
+        self.S = _s
+        self.palette_name=_pal
+    def __str__(self):
+        return super().__str__()
+    def init(self, p=None):
+        self.pallete_name=p
+        return
+
+
+def test_color(a, b, c):
+    print("#### %s:test_color" % (sys.argv[0]))
+    E = Energy_scale_class()
+    E.init_linear_scale(a,b,c)
+    P = parallell_color_scale(E)
+    P.init("A")
+    #print("%s" % (E))
+    #print("%s" % (E.summary()))
+    return
+
 def main():
     a=-75
     b=20
@@ -97,10 +118,8 @@ def main():
             b=int(sys.argv[2])
         if (len(sys.argv) > 1):
             a=int(sys.argv[1]) 
-    E = Energy_scale_class()
-    E.init_linear_scale(a,b,c)
-    print("%s" % (E))
-    print("%s" % (E.summary()))
+
+    test_color(a,b,c)
 
  
 if __name__ == '__main__':
