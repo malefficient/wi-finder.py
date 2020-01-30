@@ -67,6 +67,13 @@ def milliwatt_to_dBm(mw_in):
     ret =  math.log(float(mw_in), 10) * 10.0  - 30
     return ret
 
-
+def print_conversion_table(dBm_in):
+    print("#### Conversion table")
+    a = dBm_to_milliwatt(dBm_in)
+    b = milliwatt_to_microwatt(a)
+    c = milliwatt_to_nanowatt(a)
+    d = milliwatt_to_picowatt(a)
+    print ("%d (dBm) |  %f (mw)  |  %3.7f (uw)  |  %3.7f (nw)  | %3.7f (pw) |" %(dBm_in,a,b,c,d))
+    return
 
 
