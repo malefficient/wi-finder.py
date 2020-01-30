@@ -2,7 +2,7 @@
 import sys
 import sty
 import random
-
+from colorcet import CET_L17     as isolum
 from dbm_unit_conversion import *
 from Energy_Scaler import Energy_scale_class
 class color_w():
@@ -81,6 +81,40 @@ def compute_signal_color_from_ppi_viz(mag, E):
     C.set_float ([1.0, blue_percent, green_percent, red_percent])
     return C
 
+def compute_signal_color_from_colorcet(mag, E):
+    """Takes in mag, scale E. Should probably makeit simply take a percent later though."""
+    intensity = E.process_input_dBm_ret_percent(mag)
+    C=color_w()
+
+    if (intensity > 100.0 or intensity < -100.0):
+        print("Warning: compute_signal_color input is (literally) off the charts")
+        C.set_float ([1.0, 0.5, 0.8, 0.2])
+
+        return C
+    intensity = int(math.floor(2.55 * intensity))
+    h=isolum[intensity].lstrip('#') #RGB encoded as hex string
+    _rgb=tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+    C.set_int(_rgb)
+    print(_rgb)
+    print("RGB as tuple" )
+    input("Ck")
+    return C
+
+
+def ret_color_from_percent(mag):
+    """Takes in mag, scale E. Should probably makeit simply take a percent later though."""
+    intensity=mag
+    C=color_w()
+
+    if (intensity > 100.0 or intensity < -100.0):
+        print("Warning: compute_signal_color input is (literally) off the charts")
+        C.set_float ([1.0, 0.5, 0.8, 0.2])
+        return C
+    intensity = int(math.floor(2.55 * intensity))
+    h=isolum[intensity].lstrip('#') #RGB encoded as hex string
+    _rgb=tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+    C.set_int(_rgb)
+    return C
 
 
 class parallell_color_scale():
@@ -96,6 +130,17 @@ class parallell_color_scale():
         return
 
 
+def print_pallete(_pal):
+    C=color_w()
+    ret_s=""
+    for i in range(0, 255):
+        h=_pal[i].lstrip('#') #RGB encoded as hex string
+        _rgb_pal=tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+        C.set_int(_rgb_pal)
+        ret_s+= "%s@" %  (C)
+    ret_s += sty.rs.all
+    print(ret_s)
+    return ret_s
 def test_color(a, b, c):
     print("#### %s:test_color(%d,%d,%d)"  % (sys.argv[0],a,b,c))
     E = Energy_scale_class()
@@ -105,12 +150,15 @@ def test_color(a, b, c):
     print("%s" % (E))
     print("%s" % (E.summary()))
 
-    
-    for i in range(-85, -65):
-        c=compute_signal_color_from_ppi_viz(i,E)
-        print("%s: %sdBm  %s%% %s" % (c, i, E.process_input_dBm_ret_percent(i), sty.rs.all))
-    
-    return
+
+    C=color_w()
+    ret_s=""
+    for i in range(0, 100):        
+        c=ret_color_from_percent(i)
+        ret_s+= "%s#" %  (c)
+    ret_s+=sty.rs.all
+    print(ret_s)
+    return ret_s
 
 def main():
     a=-75
@@ -127,6 +175,7 @@ def main():
         if (len(sys.argv) > 1):
             a=int(sys.argv[1]) 
 
+    print_pallete(isolum)
     test_color(a,b,c)
 
  
