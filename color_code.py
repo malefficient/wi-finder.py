@@ -62,12 +62,14 @@ class color_w():
         """Default to conole escape character """
         return str(self.sty_color());
 
-def compute_signal_color_from_ppi_viz(mag, m_max, m_min):
+def compute_signal_color_from_ppi_viz(mag, E):
     """Takes in mag, m_max, m_min  in dB. returns a color scaled approriately"""
-    intensity = compute_signal_intensity(mag, m_max, m_min)
+    intensity = E.process_input_dBm_ret_percent(mag)
+    intensity=math.fabs(intensity * 3/100.0)
+    print("####compute_signal_color_from_ppi_viz: doctred intensity level set to: %f" % (intensity))
+    input("")
     blue_percent = green_percent = red_percent = 0.0
-    print("#### comput_signal_color::\n  #### Intensity(%d,%d,%d) = %3.2f" % (mag, m_max, m_min, intensity))
-    print("    #### Intensity varies from 0.0-3.0. ")
+    #print("    #### Intensity varies from 0.0-3.0. ")
     if (intensity > 2.0):
         blue_percent = intensity - 2.0;
         intensity -= blue_percent;
@@ -75,7 +77,7 @@ def compute_signal_color_from_ppi_viz(mag, m_max, m_min):
         green_percent = intensity - 1.0;
         intensity -= green_percent;
     red_percent =  intensity;
-    C = ColorClass()
+    C = color_w()
     C.set_float ([1.0, blue_percent, green_percent, red_percent])
     return C
 
@@ -95,13 +97,19 @@ class parallell_color_scale():
 
 
 def test_color(a, b, c):
-    print("#### %s:test_color" % (sys.argv[0]))
+    print("#### %s:test_color(%d,%d,%d)"  % (sys.argv[0],a,b,c))
     E = Energy_scale_class()
     E.init_linear_scale(a,b,c)
     P = parallell_color_scale(E)
     P.init("A")
-    #print("%s" % (E))
-    #print("%s" % (E.summary()))
+    print("%s" % (E))
+    print("%s" % (E.summary()))
+
+    
+    for i in range(-85, -65):
+        c=compute_signal_color_from_ppi_viz(i,E)
+        print("%s: %sdBm  %s%% %s" % (c, i, E.process_input_dBm_ret_percent(i), sty.rs.all))
+    
     return
 
 def main():
