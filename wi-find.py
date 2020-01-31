@@ -9,13 +9,14 @@
 
 import sys, getopt, re, copy
 from scapy.all import *
-
+from color_code import *
+from Energy_Scaler import Energy_scale_class
 from rtap_ext_util import Listify_Radiotap_Headers
 from ext_beacon_util import return_IE_by_tag, TargetCharacteristics
 from Rtap_Char import  MeasureyM, MeasureyM_PrintShop
-
+from dbm_unit_conversion import dBm_to_milliwatt, milliwatt_to_dBm
 #from colorama import Fore, Back, Style
-from column_p import MeasureyM_text_Renderer, get_color
+from render_tabular import Render_Tabular_C
 
 def Usage():
   print("Usage: %s -b <BSSID> -i <input>" % (sys.argv[0]))
@@ -85,9 +86,16 @@ class ConfigC:  #Set-once configuration paramters (values do not change during m
 
 class StateC:  #All dynamic state associated with instance
   cnt=0
-  prev_measurement_sample_avgs = []
+  prev_measurement_sample_avgs = None
   curr_measurement_samples = MeasureyM()
-  Pretty_Printer = MeasureyM_text_Renderer()
+  Pretty_Printer = Render_Tabular_C()
+  E = Energy_scale_class()
+
+  current_scale_center_in_dBm=-72
+  current_scale_span_in_dBm=20
+
+  global_sig_best=-100
+  global_sig_worst=-20
   ### YYY: *Hmm*. What would be ideal is a simple Map of AntennaId->List(MeasureyM's)
   ### I think we should go this way, with the following caveat:
   ### The 'Top' Level radiotap measurement will be in AntennaMeasuryMap[0].
@@ -100,6 +108,29 @@ class StateC:  #All dynamic state associated with instance
     m = MeasureyM()
     m.ProcessExtendedRtap(pkt)
     self.Pretty_Printer.init(m)  
+    self.E.init_linear_scale(-72, 20)
+  def update_scaling_variables(self):
+    print("####StateC::Updating scaling variables")
+    print("Type:prev_mesaurement_Sample_avgs: %s" % (self.prev_measurement_sample_avgs))
+    if (self.prev_measurement_sample_avgs):
+      _hacky_hack= self.prev_measurement_sample_avgs.Measurey_Map[5][0]
+      #print("JC: temporarily re-calibrating state.scale to static type 5: %d" % (_hacky_hack))
+      print("State.global_sig_best: %d" %  (self.global_sig_best))
+      self.global_sig_best = max(self.global_sig_best, _hacky_hack)
+      self.global_sig_worst = min(self.global_sig_worst, _hacky_hack)
+      self.approx_span_in_mx= 3.0 * math.fabs(self.global_sig_best - self.global_sig_worst)
+      #print("Global spread in dBm ~~: 3 x fabs(%d, %d)" % (self.global_sig_best, self.global_sig_worst) )
+      #print("Global spread in dBm ~~: %d " % (self.approx_span_in_mx))
+      #input(self.prev_measurement_sample_avgs.Measurey_Map) #XYZ: hacky debugging 
+      self.E.init_linear_scale(_hacky_hack, max(self.approx_span_in_mx,5))
+      
+    #sys.exit(0)
+    #self.E.init_linear_scale(self.prev_measurement_sample_avgs[:-1][5], 20)
+    #self.current_scale_center_in_dBm = self.prev_measurement_sample_avgs[:-1]
+    #self.State.current_scale_span_in_dBm = math.fabs( self.State.)
+   
+    #print(self.prev_measurement_sample_avgs)
+    #input("Kk?")
 class MainAppC:
 
   State = StateC()
@@ -134,18 +165,20 @@ class MainAppC:
       return
     else:
       
-      self.State.prev_measurement_sample_avgs.append (self.State.curr_measurement_samples.Average())
+      ## PCODE: If (time to re-draw table headers), then time to adjust our scaling vars.
+      self.State.update_scaling_variables()
+      self.State.prev_measurement_sample_avgs = (self.State.curr_measurement_samples.Average())
       self.State.curr_measurement_samples = MeasureyM() # Clear current list
       #if (self.State.cnt == 1 or self.State.cnt % 50 == 0):
       #  print("%s" % (self.State.Pretty_Printer.ret_header()))
-      if (len(self.State.prev_measurement_sample_avgs) >= 2):
+      if ((self.State.prev_measurement_sample_avgs) != None):
         #print("#### Most recent averages ####")
         #print("    (P) %s" % (self.State.prev_measurement_sample_avgs[-2].Measurey_Map))
         #print("    (C) %s" % (self.State.prev_measurement_sample_avgs[-1].Measurey_Map))
         #print("%s" % (self.State.Pretty_Printer.ret_header()))
         if (self.State.Pretty_Printer.cnt % 10 == 0):
           print("%s" % (self.State.Pretty_Printer.ret_header()))
-        self.State.Pretty_Printer.print(self.State.prev_measurement_sample_avgs[-1])
+        self.State.Pretty_Printer.print(self.State.prev_measurement_sample_avgs)
         
     return
     
@@ -233,7 +266,7 @@ def main():
     print("#### main(): Error. No Beacon received for BSSID: %s" % (A.Config.BSSID))
     exit(0)
   else:
-    input(sys.argv[0] + ": Target verified. Enter to continue.")
+    print(sys.argv[0] + ": Target verified. Enter to continue.")
     pkt1=pkt1[0]
     pkt1.summary()
     A.Config.SSID=pkt1.info.decode() 

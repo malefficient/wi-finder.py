@@ -24,9 +24,7 @@ class Energy_scale_class():
     SlotScale_l=[]
     def __init__(self):
         self.Initialized = True
-        print("### Engery_Scale_class::Init()")
-        #input('KYC')
-    
+        #print("### Engery_Scale_class::Init()")  
     def _initialize_units_table(self, _mw_bottom, _mw_center, _mw_top):
         self.bottom_scale_in_mw = _mw_bottom
         self.bottom_scale_in_nw = milliwatt_to_nanowatt(_mw_bottom)        
@@ -70,7 +68,7 @@ class Energy_scale_class():
         _top =  multiplier * _cent
         _btm = (1/multiplier) * _cent
         self._initialize_units_table(_btm, _cent, _top)
-        print("#### Energy_scale_class: init_linear_scale2(%s, %d)" % (_center_dBm,multiplier))
+        #print("#### Energy_scale_class: init_linear_scale(%s, %d)" % (_center_dBm,multiplier))
         #print("%s" % (self.__str__()))
         return
 
@@ -78,24 +76,21 @@ class Energy_scale_class():
         """ returns a TBD named tuple that contains the results of input value in _T _B _D space"""
         a = dBm_to_milliwatt(in_dBm)
         
-        ###                                             
-        ### We need to treat the scale like this:  - 100.0%  <-----------|   | ------------->|  + > 100.0%
+        ### treat the scale like this:  - 100.0%  <-----------|   | ------------->|  + > 100.0%
         ### That  means, comparing input to center, deciding which directio to go, then computing distance from center to input
         if (a >= self.center_scale_in_mw):
-            delta_to_100=(self.top_scale_in_mw - self.center_scale_in_mw)
-            delta_to_a=(a - self.center_scale_in_mw)
-            print("#### Positive percent case:\n####center_in_mw=%3.7fmw in_dBm=%3.7fmw" %(self.center_scale_in_mw, a))
+            delta_to_100=math.fabs(self.top_scale_in_mw - self.center_scale_in_mw)
+            delta_to_a=math.fabs((a - self.center_scale_in_mw))
             ret_percent = (delta_to_a) / (delta_to_100)
         else:
-            delta_to_100=(self.center_scale_in_mw - self.bottom_scale_in_mw)
+            delta_to_100=math.fabs(self.center_scale_in_mw - self.bottom_scale_in_mw)
             delta_to_a=(self.center_scale_in_mw - a)
-            print("#### Negative percent case")
             ret_percent = (delta_to_a) / (delta_to_100)
         
         ret_percent *= 100.0  #Round return value up an convert to percent
         ret_percent=int(math.ceil(ret_percent)) 
         
-        print("in_dBm (%d) is %s perent of scale" % (in_dBm,ret_percent))
+        #print("in_dBm (%d) is %s perent of scale" % (in_dBm,ret_percent))
         return ret_percent 
         
     def summary(self, width=40):
@@ -144,8 +139,6 @@ class Energy_scale_class():
         ret_str +='[' + t.format(  "  (%.1f) nW  "%(self.top_span_in_nw)  ) +']'
         ret_str += "\n"        
 
-        
-        
     
         #ret_str=l"###########Energe Scalar Table############\n"
         ###                                                 #| f="{:3.1f}dBm"
