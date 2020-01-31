@@ -68,7 +68,7 @@ class Energy_scale_class():
         _top =  multiplier * _cent
         _btm = (1/multiplier) * _cent
         self._initialize_units_table(_btm, _cent, _top)
-        #print("#### Energy_scale_class: init_linear_scale2(%s, %d)" % (_center_dBm,multiplier))
+        #print("#### Energy_scale_class: init_linear_scale(%s, %d)" % (_center_dBm,multiplier))
         #print("%s" % (self.__str__()))
         return
 

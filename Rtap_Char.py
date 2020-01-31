@@ -13,6 +13,7 @@ from rtap_ext_util import RadiotapTable, Listify_Radiotap_Headers
 
 
 class MeasureyM:
+  """Clever class to allow aggregation (typically, averaging) of various radiotap fields using one code base. TODO: Rename"""
   rtap_table = RadiotapTable()
   _rt_relevant_bits= [2,3,5,6,7]
   num_updates=0

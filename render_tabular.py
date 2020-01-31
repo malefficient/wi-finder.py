@@ -123,24 +123,28 @@ class Render_Tabular_C:
     num_entries={}
     num_cols=0
     column_order=[3,7,5,6]
+
+    #TODO:  re-factor:  we can replace these various flat_column_attribue_N data structures as single NamedTuple
+    #                   This would also make the rever mapping (from flattened header display name) to actual rtap bitno less weird
     flat_column_headings = []
     flat_column_widths=[]
     flat_column_fmt_strs=""
+    flat_column_reverse_bitno=[]
     def init(self, M):
         self.header_list.clear()
         self.col_width.clear()
         self.num_entries.clear()
         self.flat_column_headings.clear()
         self.flat_column_widths.clear()
-        self.num_cols=0
+        self.flat_column_reverse_bitno.clear()
         self.flat_column_fmt_strs=""
-
+        
+        self.num_cols=0
         self.colors_enabled = 0
         self.left_margin="        "
         #print("###MeasureyM_text_Renderer::Init()")
         self.initialized = True
         
-        #XXX: This should not stay here for long.
         # Init should be passed a MeasureyM that resembles those it is expected to later process and output.
         # We perform as much one-time-only formatting work here, so that print() can be relatively fast.
         # Code within the init function is optimized for clarity over performance. 
@@ -170,21 +174,22 @@ class Render_Tabular_C:
                 print("Errror: Unexpected case in init. (0 length num entries. Should be handled earlier.)")
                 sys.exit(0)
             elif self.num_entries[b] > 0:
-                #print ("   XX Tricky case. Need to break b:(%d) (%s) in %d cols" % (b,curr_h, self.num_entries[b]))
+                print ("   XXZ Render_Table_C::init Tricky case. Need to break b:(%d) (%s) into %d cols" % (b,curr_h, self.num_entries[b]))
                 for idx in range(0, self.num_entries[b] ):
                     if (idx == 0):
                         c_h = '{}'.format(curr_h,idx)
                     else:
                         c_h = '{:.3}.{:d}'.format(curr_h,idx)  ## 'Antenna 1 -> Ant.1, Antenna2 -> Ant.2
                     self.flat_column_headings.append(c_h)
+                    self.flat_column_reverse_bitno.append(b)
                     #print("    %s" % (c_h))
                     self.flat_column_widths.append(10)        #TODO: Compute this dynamically later
                     self.flat_column_fmt_strs += (rs.all + "|" + "{}" + "{:^10.8}" + rs.all)   #TODO: Also this.
 
         self.num_flat_headings = len(self.flat_column_headings)
-        ##print("   Pretty_P::Init Generated %d Flattened headings: %s" % ( self.num_flat_headings, self.flat_column_headings))
+        print("   Pretty_P::Init Generated %d Flattened headings: %s" % ( self.num_flat_headings, self.flat_column_headings))
         ##print("   Pretty_P::Init from %s %s" % (M, M.Measurey_Map))
-        ##input("Pretty_P::Init::end")
+        input("Pretty_P::Init::end")
 
 
     def ret_header(self):
