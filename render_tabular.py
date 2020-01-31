@@ -1,25 +1,20 @@
 from Rtap_Char import  MeasureyM, RadiotapTable
-
+from color_code import color_w
 from sys import exit
+import sty
 import random
+import math
+from Energy_Scaler import Energy_scale_class
+from colorcet import isolum as isolum
 from sty import Style, RgbFg, fg, bg, ef, rs  #(Foreground, BackGround, Effects, Reset)
 from functools import reduce
 from itertools import chain
 
-### COlorscheme notes:
-## Virdis (bokeh) purple->yellow
-## Spectral (bokeh) red->yellow->purple
-### Bokeh:  CategoricalColorMapper : https://docs.bokeh.org/en/latest/docs/user_guide/categorical.html#userguide-categorical
-### source = ColumnDataSource(data=dict(fruits=fruits, counts=counts, color=Spectral6))
-### factor_cmap('fruits', palette=Spectral6, factors=fruits)
-### TODO: Should I pick a static coor map (or two), do the math to normalize dB myself, and just use offset?
-####      Or, would it be better to let brokeh dynamically generate one based on the range itself?
-
-#Additionally, you can also use any of the 256-color perceptually uniform Bokeh palettes from the external colorcet package, if it is installed.
-#In the context of Bokeh, a palette is a simple plain Python list of (hex) RGB color strings. For example the Blues8 palette which looks like 
-#['#084594', '#2171b5', '#4292c6', '#6baed6', '#9ecae1', '#c6dbef', '#deebf7', '#f7fbff']
-
-
+##render_tabular todo: 
+## Figure out an easy way to map each column in the output table to an associated/appropriate color palette.
+## (Quick and easy approach: if (curr_header_name.begins_with(Sig)) -> use heatmap.) if (Lock) -> other scale. Else: Pick a static color,theme.
+## The column heading->color pallete map can / should(?) be shared between the tabular render engine, and the _tbd_ histogram renderer.
+##
 
 def generate_wifinder_samples():
 
@@ -75,18 +70,51 @@ def ascii_print_example_columns():
         print(format.format(*row))
     
 
+#YYY: field_selector is a generalization from 'bit_no'. Antenna0.Sig, Antenna1,sig, Antenna2.sig share bit numbers. 
+#     Later we will (hopefully) have a nice map of (header_index, or _bitno_fieldno) -> colorcet_pallete.
+#     For now field_selector is a placeholder. 
+def colorcet_wrapper_ret_color(intensity, field_selector):
+    """Given intensity (in percent), return appropriate color given currently selected pallete"""
+    C=color_w()
+    intensity = int(math.floor(2.55 * intensity))
+    #print("####colorcet_wrapper_ret_color((%s))" % (intensity))
+    h=isolum[intensity].lstrip('#')                   #RGB encoded as hex string
+    _rgb=tuple(int(h[i:i+2], 16) for i in (0, 2, 4))  #Magic list comprehension turns hex into decimal.
+    C.set_int(_rgb)
+    return C
 
-def get_color():
+def new_get_color(bitno, _val_in):
+    """ Temporary shim so that we have an (almost) drop in replacement for old_get_color TODO: needs to consider the field type (by 'bitno' or other means"""
+    E = Energy_scale_class()
+    E.init_linear_scale(-52, 20) # XXX: Obvs, this cant/wont stay here. 
+    C=color_w()
+    #print("####new_get_color: bit_no:(%d)  _val_in:(%d)" % (bitno, _val_in))
+    if (bitno != 5): #If not signal, return early. (E_NOT_HANDLED_YET)
+        C.set_int([255,255,255])
+        return C
+
+    if (bitno == 5):
+        intensity = E.process_input_dBm_ret_percent(_val_in) 
+        #input("####new_get_color: Handing base case (Signal. val:(%d), intensity(%f)" % (_val_in, intensity))
+        if (intensity > 100.0 or intensity < -100.0):
+            print("Signal dBm_in registers as %f percent (_literally_ off the scale)" % (intensity))
+            print("Returning constant: red")
+            C.set_int([255,0,0])
+            return C
+        else:
+            C = colorcet_wrapper_ret_color(intensity, field_selector=bitno) # See YYY above
+            return C
+def old_get_color():
     a,b,c=random.randint(0,255),random.randint(0,255),random.randint(0,255)
-    cc = fg(a, b, c)
-    return fg.white
+    r = sty.fg(a,b,c)
+    return r
 
 ##YYY: JC: TODO: The end goal should be to have two different 'rendering engines'.
 ##               The 'classic' tabular/column based output, (initially implemented in the MeasureyM_text_Renderer)
 ##               And the alternate 'histogram' approach.  
 ##               Conceptually these two visualizations are rendering/require access to the exact same state across both.
 ##               It remains unclear how much potential there is for code reuse 
-class MeasureyM_text_Renderer:
+class Render_Tabular_C:
     initialized=False
     cnt=0
     rtap_table_helper = RadiotapTable()
@@ -112,6 +140,7 @@ class MeasureyM_text_Renderer:
         #print("###MeasureyM_text_Renderer::Init()")
         self.initialized = True
         
+        #XXX: This should not stay here for long.
         # Init should be passed a MeasureyM that resembles those it is expected to later process and output.
         # We perform as much one-time-only formatting work here, so that print() can be relatively fast.
         # Code within the init function is optimized for clarity over performance. 
@@ -206,9 +235,15 @@ class MeasureyM_text_Renderer:
         if len(values_l) != len(self.flat_column_headings):
             print("#### Warning: print() passed Measurey_M with %d entries. Expected %d" % (len(values_l), len(self.flat_column_headings)))
             input("Kk")
+
+       
+       
+       
+        ### TODO: We need to iterate over each field,value, in a manner that we can reasonably fill in the selected Renderer 
+        ###       on the type of data. (I.e., 'Signal', 'Lock', or ?)
         colors_l = []
         for idx in range(0, len(self.flat_column_headings)):
-            colors_l.append ( get_color())
+            colors_l.append ( new_get_color( self.column_order[idx], values_l[idx]))
         
 
         ### colors for a given value (colors_l, values_l) 

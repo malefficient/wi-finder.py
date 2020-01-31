@@ -24,9 +24,7 @@ class Energy_scale_class():
     SlotScale_l=[]
     def __init__(self):
         self.Initialized = True
-        print("### Engery_Scale_class::Init()")
-        #input('KYC')
-    
+        #print("### Engery_Scale_class::Init()")  
     def _initialize_units_table(self, _mw_bottom, _mw_center, _mw_top):
         self.bottom_scale_in_mw = _mw_bottom
         self.bottom_scale_in_nw = milliwatt_to_nanowatt(_mw_bottom)        
@@ -70,7 +68,7 @@ class Energy_scale_class():
         _top =  multiplier * _cent
         _btm = (1/multiplier) * _cent
         self._initialize_units_table(_btm, _cent, _top)
-        print("#### Energy_scale_class: init_linear_scale2(%s, %d)" % (_center_dBm,multiplier))
+        #print("#### Energy_scale_class: init_linear_scale2(%s, %d)" % (_center_dBm,multiplier))
         #print("%s" % (self.__str__()))
         return
 

@@ -16,7 +16,7 @@ from ext_beacon_util import return_IE_by_tag, TargetCharacteristics
 from Rtap_Char import  MeasureyM, MeasureyM_PrintShop
 
 #from colorama import Fore, Back, Style
-from column_p import MeasureyM_text_Renderer, get_color
+from render_tabular import Render_Tabular_C
 
 def Usage():
   print("Usage: %s -b <BSSID> -i <input>" % (sys.argv[0]))
@@ -88,7 +88,7 @@ class StateC:  #All dynamic state associated with instance
   cnt=0
   prev_measurement_sample_avgs = []
   curr_measurement_samples = MeasureyM()
-  Pretty_Printer = MeasureyM_text_Renderer()
+  Pretty_Printer = Render_Tabular_C()
   E = Energy_scale_class()
   ### YYY: *Hmm*. What would be ideal is a simple Map of AntennaId->List(MeasureyM's)
   ### I think we should go this way, with the following caveat:
