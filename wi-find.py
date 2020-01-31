@@ -3,10 +3,17 @@
 #
 #  wi-find.py: Finds things with Wi-Fi!
 #
-# Copyright (C) 2019 Johnny Cache <johnycsh@gmail.com>
+# Copyright (C) 2019,2020 Johnny Cache <johnycsh@gmail.com>
 #
-
-
+## Todo list: 
+## cleanup table output. prepend 'best' and worst' signal,ssid,..other useful stats to top of column output
+## Implement 'xyz_watt' class? internal results stored in fixed precision. __str__ has human friendly units. 
+## Periodically output selected color palette, range. (Maybe once on invocation?)
+## Map different scaler's, color palettes to different fields. (Simplify the tabular output by mapping signal_Stren.0.1,2 ->signal bitno)
+## Histo-bellgraphagram (c) me. 
+## Toggle between absolute,relative. Maybe let 'z'/'Z' or '+'/'-' influence scale (zoom level(s))
+## 'ifdef' color support (boo!)
+## support being launched via wi-fite 
 import sys, getopt, re, copy
 from scapy.all import *
 from color_code import *
