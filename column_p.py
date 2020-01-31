@@ -81,6 +81,11 @@ def get_color():
     cc = fg(a, b, c)
     return fg.white
 
+##YYY: JC: TODO: The end goal should be to have two different 'rendering engines'.
+##               The 'classic' tabular/column based output, (initially implemented in the MeasureyM_text_Renderer)
+##               And the alternate 'histogram' approach.  
+##               Conceptually these two visualizations are rendering/require access to the exact same state across both.
+##               It remains unclear how much potential there is for code reuse 
 class MeasureyM_text_Renderer:
     initialized=False
     cnt=0

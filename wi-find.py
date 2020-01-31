@@ -9,7 +9,8 @@
 
 import sys, getopt, re, copy
 from scapy.all import *
-
+from color_code import *
+from Energy_Scaler import Energy_scale_class
 from rtap_ext_util import Listify_Radiotap_Headers
 from ext_beacon_util import return_IE_by_tag, TargetCharacteristics
 from Rtap_Char import  MeasureyM, MeasureyM_PrintShop
@@ -88,6 +89,7 @@ class StateC:  #All dynamic state associated with instance
   prev_measurement_sample_avgs = []
   curr_measurement_samples = MeasureyM()
   Pretty_Printer = MeasureyM_text_Renderer()
+  E = Energy_scale_class()
   ### YYY: *Hmm*. What would be ideal is a simple Map of AntennaId->List(MeasureyM's)
   ### I think we should go this way, with the following caveat:
   ### The 'Top' Level radiotap measurement will be in AntennaMeasuryMap[0].
@@ -100,6 +102,7 @@ class StateC:  #All dynamic state associated with instance
     m = MeasureyM()
     m.ProcessExtendedRtap(pkt)
     self.Pretty_Printer.init(m)  
+    self.E.init_linear_scale(-72, 20) #YYY
 class MainAppC:
 
   State = StateC()
@@ -233,7 +236,7 @@ def main():
     print("#### main(): Error. No Beacon received for BSSID: %s" % (A.Config.BSSID))
     exit(0)
   else:
-    input(sys.argv[0] + ": Target verified. Enter to continue.")
+    print(sys.argv[0] + ": Target verified. Enter to continue.")
     pkt1=pkt1[0]
     pkt1.summary()
     A.Config.SSID=pkt1.info.decode() 

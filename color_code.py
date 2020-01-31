@@ -2,7 +2,7 @@
 import sys
 import sty
 import random
-from colorcet import CET_L17     as isolum
+from colorcet import CET_L17 as isolum
 from dbm_unit_conversion import *
 from Energy_Scaler import Energy_scale_class
 class color_w():
