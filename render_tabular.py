@@ -95,15 +95,19 @@ def new_get_color(bitno, _val_in):
 
     if (bitno == 5):
         intensity = E.process_input_dBm_ret_percent(_val_in) 
-        #input("####new_get_color: Handing base case (Signal. val:(%d), intensity(%f)" % (_val_in, intensity))
-        if (intensity > 100.0 or intensity < -100.0):
-            print("Signal dBm_in registers as %f percent (_literally_ off the scale)" % (intensity))
-            print("Returning constant: red")
-            C.set_int([255,0,0])
-            return C
+        
+        if (intensity < 100.0 and intensity >-100.0):
+            C=colorcet_wrapper_ret_color(100.0, field_selector=bitno)
+        elif (intensity > 100.0 and intensity < 110.0): #Coach always said to give it 110% 
+            C=colorcet_wrapper_ret_color(-100.0, field_selector=bitno)
+        elif (intensity > -110.0 and intensity < -100.0): 
+            C=colorcet_wrapper_ret_color(0.0, field_selector=bitno)
         else:
-            C = colorcet_wrapper_ret_color(intensity, field_selector=bitno) # See YYY above
-            return C
+            Warning("Signal dBm_in registers as %f percent (_literally_ off the scale)" % (intensity))
+            C.set_int([255,0,0])
+      
+        return C
+      
 def old_get_color():
     a,b,c=random.randint(0,255),random.randint(0,255),random.randint(0,255)
     r = sty.fg(a,b,c)
@@ -196,7 +200,7 @@ class Render_Tabular_C:
         if (self.initialized == False):
             print(" Error. Measurey_M::Print  called before init() ")
             exit()
-        #print("    #### header column length list: %s" % (self.flat_column_widths))
+        print("    #### header column length list: %s" % (self.flat_column_widths))
         header_fmtstr_complete="" 
         spacer_str=""
         for i in range(0,  len(self.flat_column_headings)):
@@ -248,7 +252,7 @@ class Render_Tabular_C:
         ###       on the type of data. (I.e., 'Signal', 'Lock', or ?)
         colors_l = []
         for idx in range(0, len(self.flat_column_headings)):
-            colors_l.append ( new_get_color( self.column_order[idx], values_l[idx]))
+            colors_l.append ( new_get_color( self.flat_column_reverse_bitno[idx], values_l[idx]))
         
 
         ### colors for a given value (colors_l, values_l) 

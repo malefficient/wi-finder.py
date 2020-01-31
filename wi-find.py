@@ -14,6 +14,8 @@
 ## Toggle between absolute,relative. Maybe let 'z'/'Z' or '+'/'-' influence scale (zoom level(s))
 ## 'ifdef' color support (boo!)
 ## support being launched via wi-fite 
+## json config file?
+## Render_Tabular::init: Test the weird case where alfa driver returns 0dBm for last Sig.1-4, but 0 is okay. (actual byte value is 0xff, which we may as well take as a special case for 'missing')
 import sys, getopt, re, copy
 from scapy.all import *
 from color_code import *
@@ -117,15 +119,18 @@ class StateC:  #All dynamic state associated with instance
     self.Pretty_Printer.init(m)  
     self.E.init_linear_scale(-72, 20)
   def update_scaling_variables(self):
-    print("####StateC::Updating scaling variables")
-    print("Type:prev_mesaurement_Sample_avgs: %s" % (self.prev_measurement_sample_avgs))
+    #print("####StateC::Updating scaling variables")
+    #print("Type:prev_mesaurement_Sample_avgs: %s" % (self.prev_measurement_sample_avgs))
     if (self.prev_measurement_sample_avgs):
       _hacky_hack= self.prev_measurement_sample_avgs.Measurey_Map[5][0]
       #print("JC: temporarily re-calibrating state.scale to static type 5: %d" % (_hacky_hack))
-      print("State.global_sig_best: %d" %  (self.global_sig_best))
+      #print("State.global_sig_best: %d" %  (self.global_sig_best))
       self.global_sig_best = max(self.global_sig_best, _hacky_hack)
       self.global_sig_worst = min(self.global_sig_worst, _hacky_hack)
+      # Despite having the code to solve for this exact variable,  intentionally use the 'rule of three's' for the scale approximation.
+      # This avoids the possibility of any sort of aggregate/cyclic precision issues between the 'view' of the data and the actual model.
       self.approx_span_in_mx= 3.0 * math.fabs(self.global_sig_best - self.global_sig_worst)
+       
       #print("Global spread in dBm ~~: 3 x fabs(%d, %d)" % (self.global_sig_best, self.global_sig_worst) )
       #print("Global spread in dBm ~~: %d " % (self.approx_span_in_mx))
       #input(self.prev_measurement_sample_avgs.Measurey_Map) #XYZ: hacky debugging 
@@ -184,6 +189,8 @@ class MainAppC:
         #print("    (C) %s" % (self.State.prev_measurement_sample_avgs[-1].Measurey_Map))
         #print("%s" % (self.State.Pretty_Printer.ret_header()))
         if (self.State.Pretty_Printer.cnt % 10 == 0):
+          print("State.global_sig_best: %d" %  (self.State.global_sig_best))      #YYY: etc, etc
+      
           print("%s" % (self.State.Pretty_Printer.ret_header()))
         self.State.Pretty_Printer.print(self.State.prev_measurement_sample_avgs)
         
